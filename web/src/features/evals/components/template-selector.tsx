@@ -1,4 +1,5 @@
 import { type EvalTemplate } from "@langfuse/shared";
+import { useTranslation } from "react-i18next";
 
 import {
   CheckIcon,
@@ -58,6 +59,7 @@ export const TemplateSelector = ({
   className,
   disabled = false,
 }: TemplateSelectorProps) => {
+  const { t } = useTranslation();
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [search, setSearch] = useState("");
   const {
@@ -152,8 +154,10 @@ export const TemplateSelector = ({
             <div className="flex items-center gap-1 overflow-hidden">
               <span className="mr-1 truncate">
                 {activeTemplates.length > 0
-                  ? `${activeTemplates.length} active evaluators`
-                  : "Select evaluators"}
+                  ? t("evaluation.eval.pages.activeEvaluators", {
+                      count: activeTemplates.length,
+                    })
+                  : t("evaluation.eval.pages.selectEvaluators")}
               </span>
             </div>
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -162,7 +166,7 @@ export const TemplateSelector = ({
         <PopoverContent className="w-[300px] p-0" align="start">
           <InputCommand>
             <InputCommandInput
-              placeholder="Search evaluators..."
+              placeholder={t("evaluation.eval.pages.searchEvaluators")}
               className="h-9"
               value={search}
               onValueChange={setSearch}
@@ -216,7 +220,9 @@ export const TemplateSelector = ({
                                   <AlertCircle className="ml-1 h-4 w-4 text-yellow-500" />
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                  Requires project-level evaluation model
+                                  {t(
+                                    "evaluation.eval.newEvaluator.requiresProjectLevelEvaluationModel",
+                                  )}
                                 </TooltipContent>
                               </Tooltip>
                             )}
@@ -291,7 +297,9 @@ export const TemplateSelector = ({
                                 <AlertCircle className="ml-1 h-4 w-4 text-yellow-500" />
                               </TooltipTrigger>
                               <TooltipContent>
-                                Requires project-level evaluation model
+                                {t(
+                                  "dataset.newDatasetRunForm.requiresProjectLevelEvaluationModel",
+                                )}
                               </TooltipContent>
                             </Tooltip>
                           )}

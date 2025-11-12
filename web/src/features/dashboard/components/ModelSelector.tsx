@@ -18,6 +18,7 @@ import { cn } from "@/src/utils/tailwind";
 import { type FilterState } from "@langfuse/shared";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 export const ModelSelectorPopover = ({
   allModels,
@@ -34,6 +35,7 @@ export const ModelSelectorPopover = ({
   isAllSelected: boolean;
   handleSelectAll: () => void;
 }) => {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
   return (
@@ -51,8 +53,12 @@ export const ModelSelectorPopover = ({
       </PopoverTrigger>
       <PopoverContent className="w-56 p-0">
         <InputCommand>
-          <InputCommandInput placeholder="Search models..." />
-          <InputCommandEmpty>No model found.</InputCommandEmpty>
+          <InputCommandInput
+            placeholder={t("dashboard.modelUsageChart.searchModels")}
+          />
+          <InputCommandEmpty>
+            {t("common.select.noResultsFound")}
+          </InputCommandEmpty>
           <InputCommandGroup>
             <InputCommandItem onSelect={handleSelectAll}>
               <Check
@@ -62,7 +68,9 @@ export const ModelSelectorPopover = ({
                 )}
               />
               <span>
-                <p className="font-semibold">Select All</p>
+                <p className="font-semibold">
+                  {t("dashboard.modelUsageChart.selectAll")}
+                </p>
               </span>
             </InputCommandItem>
             <InputCommandSeparator className="my-1" />
@@ -107,6 +115,7 @@ export const useModelSelection = (
   fromTimestamp: Date,
   toTimestamp: Date,
 ) => {
+  const { t } = useTranslation();
   const allModels = getAllModels(
     projectId,
     globalFilterState,
@@ -120,7 +129,7 @@ export const useModelSelection = (
   const isAllSelected = selectedModels.length === allModels.length;
 
   const buttonText = isAllSelected
-    ? "All models"
+    ? t("dashboard.modelUsageChart.allModels")
     : `${selectedModels.length} selected`;
 
   const handleSelectAll = () => {

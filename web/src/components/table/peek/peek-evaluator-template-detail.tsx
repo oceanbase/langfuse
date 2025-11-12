@@ -4,12 +4,14 @@ import { usePeekEvalTemplateData } from "@/src/components/table/peek/hooks/usePe
 import { EvalTemplateForm } from "@/src/features/evals/components/template-form";
 import { MaintainerTooltip } from "@/src/features/evals/components/maintainer-tooltip";
 import { getMaintainer } from "@/src/features/evals/utils/typeHelpers";
+import { useTranslation } from "react-i18next";
 
 export const PeekViewEvaluatorTemplateDetail = ({
   projectId,
 }: {
   projectId: string;
 }) => {
+  const { t } = useTranslation();
   const { peekId } = usePeekState();
 
   const { data: template } = usePeekEvalTemplateData({

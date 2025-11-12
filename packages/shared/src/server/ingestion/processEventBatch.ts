@@ -238,6 +238,25 @@ export const processEventBatch = async (
         s3UploadErrored = true;
         logger.error("Failed to upload event to S3", {
           error: result.reason,
+          errorType: result.reason?.constructor?.name,
+          errorMessage:
+            result.reason instanceof Error
+              ? result.reason.message
+              : String(result.reason),
+          errorStack:
+            result.reason instanceof Error ? result.reason.stack : undefined,
+          context: {
+            bucketName: env.LANGFUSE_S3_EVENT_UPLOAD_BUCKET,
+            endpoint: env.LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT,
+            region: env.LANGFUSE_S3_EVENT_UPLOAD_REGION,
+            forcePathStyle: env.LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE,
+            hasAccessKey: !!env.LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID,
+            hasSecretKey: !!env.LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY,
+            prefix: env.LANGFUSE_S3_EVENT_UPLOAD_PREFIX,
+            projectId: authCheck.scope.projectId,
+            isLangfuseInternal,
+            source,
+          },
         });
       }
     });
@@ -425,9 +444,57 @@ export const aggregateBatchResult = (
 
   if (returnedErrors.length > 0) {
     traceException(errors);
+
+    // 增强错误日志，包含完整的错误详情
     logger.error("Error processing events", {
       errors: returnedErrors,
       "langfuse.project.id": projectId,
+      // 添加原始错误详情
+      originalErrors: errors.map((err) => ({
+        id: err.id,
+        errorType: err.error?.constructor?.name || "Unknown",
+        errorMessage:
+          err.error instanceof Error ? err.error.message : String(err.error),
+        errorStack: err.error instanceof Error ? err.error.stack : undefined,
+        errorDetails: {
+          isError: err.error instanceof Error,
+          hasMessage: err.error instanceof Error && !!err.error.message,
+          hasStack: err.error instanceof Error && !!err.error.stack,
+          errorConstructor: err.error?.constructor?.name,
+          errorPrototype: err.error
+            ? Object.getPrototypeOf(err.error)?.constructor?.name
+            : undefined,
+        },
+        // 对于非Error对象，尝试序列化
+        rawError: err.error instanceof Error ? undefined : err.error,
+      })),
+      // 添加错误统计信息
+      errorSummary: {
+        totalErrors: errors.length,
+        errorTypes: errors.reduce(
+          (acc, err) => {
+            const type = err.error?.constructor?.name || "Unknown";
+            acc[type] = (acc[type] || 0) + 1;
+            return acc;
+          },
+          {} as Record<string, number>,
+        ),
+        hasValidationErrors: errors.some(
+          (err) => err.error instanceof InvalidRequestError,
+        ),
+        hasAuthErrors: errors.some(
+          (err) => err.error instanceof UnauthorizedError,
+        ),
+        hasNotFoundErrors: errors.some(
+          (err) => err.error instanceof LangfuseNotFoundError,
+        ),
+        hasOtherErrors: errors.some(
+          (err) =>
+            !(err.error instanceof InvalidRequestError) &&
+            !(err.error instanceof UnauthorizedError) &&
+            !(err.error instanceof LangfuseNotFoundError),
+        ),
+      },
     });
   }
 

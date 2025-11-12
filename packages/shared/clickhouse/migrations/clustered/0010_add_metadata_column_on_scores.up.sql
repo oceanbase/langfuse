@@ -1,1 +1,1 @@
-ALTER TABLE scores ON CLUSTER default ADD COLUMN metadata Map(LowCardinality(String), String) AFTER comment;
+ALTER TABLE scores ON CLUSTER default ADD COLUMN IF NOT EXISTS metadata Map(LowCardinality(String), String) AFTER comment;

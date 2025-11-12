@@ -78,6 +78,7 @@ import { showErrorToast } from "@/src/features/notifications/showErrorToast";
 import { useUniqueNameValidation } from "@/src/hooks/useUniqueNameValidation";
 import { usePostHogClientCapture } from "@/src/features/posthog-analytics/usePostHogClientCapture";
 import { useHasProjectAccess } from "@/src/features/rbac/utils/checkProjectAccess";
+import { useTranslation } from "react-i18next";
 
 interface TableViewPresetsDrawerProps {
   viewConfig: {
@@ -106,6 +107,7 @@ export function TableViewPresetsDrawer({
   viewConfig,
   currentState,
 }: TableViewPresetsDrawerProps) {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQueryLocal] = useState("");
   const { tableName, projectId, controllers } = viewConfig;
   const { handleSetViewId, applyViewState, selectedViewId } = controllers;
@@ -292,8 +294,11 @@ export function TableViewPresetsDrawer({
         }}
       >
         <DrawerTrigger asChild>
-          <Button variant="outline" title={selectedViewName ?? "Table View"}>
-            <span>{selectedViewName ?? "Table View"}</span>
+          <Button
+            variant="outline"
+            title={selectedViewName ?? t("common.table.tableView")}
+          >
+            <span>{selectedViewName ?? t("common.table.tableView")}</span>
             {selectedViewId ? (
               <ChevronDown className="ml-1 h-4 w-4" />
             ) : (
@@ -308,7 +313,7 @@ export function TableViewPresetsDrawer({
             <div className="sticky top-0 z-10">
               <DrawerHeader className="flex flex-row items-center justify-between rounded-sm bg-background px-3 py-2">
                 <DrawerTitle className="flex flex-row items-center gap-1">
-                  Saved Table Views{" "}
+                  {t("common.table.savedTableViews")}{" "}
                   <a
                     href="https://github.com/orgs/langfuse/discussions/4657"
                     target="_blank"
@@ -564,7 +569,7 @@ export function TableViewPresetsDrawer({
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Save Current Table View</DialogTitle>
+            <DialogTitle>{t("common.table.saveCurrentTableView")}</DialogTitle>
           </DialogHeader>
           <Form {...form}>
             <form
@@ -578,7 +583,7 @@ export function TableViewPresetsDrawer({
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>View name</FormLabel>
+                      <FormLabel>{t("common.table.viewName")}</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -588,18 +593,25 @@ export function TableViewPresetsDrawer({
                 />
 
                 <div className="mt-4 text-sm text-muted-foreground">
-                  <p>This will save the current:</p>
+                  <p>{t("common.table.thisWillSave")}</p>
                   <ul className="mt-2 list-disc pl-5">
                     <li>
-                      Column arrangement ({currentState.columnOrder.length}{" "}
-                      columns)
+                      {t("common.table.columnArrangement")} (
+                      {currentState.columnOrder.length}{" "}
+                      {t("common.table.columnsCount")})
                     </li>
-                    <li>Filters ({currentState.filters.length} active)</li>
                     <li>
-                      Sort order ({formatOrderBy(currentState.orderBy)}{" "}
-                      criteria)
+                      {t("common.table.filters")} ({currentState.filters.length}{" "}
+                      {t("common.table.active")})
                     </li>
-                    {currentState.searchQuery && <li>Search term</li>}
+                    <li>
+                      {t("common.table.sortOrder")} (
+                      {formatOrderBy(currentState.orderBy)}{" "}
+                      {t("common.table.criteria")})
+                    </li>
+                    {currentState.searchQuery && (
+                      <li>{t("common.table.searchTerm")}</li>
+                    )}
                   </ul>
                 </div>
               </DialogBody>

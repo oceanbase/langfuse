@@ -32,7 +32,9 @@ export const testModelCall = async ({
       messages: [
         {
           role: ChatMessageRole.User,
-          content: prompt ?? "mock content",
+          content:
+            prompt ??
+            "Please respond with a JSON object containing a score and reasoning.",
           type: ChatMessageType.User,
         },
       ],
@@ -43,7 +45,7 @@ export const testModelCall = async ({
         ...modelConfig,
       },
       structuredOutputSchema: zodV3.object({
-        score: zodV3.string(),
+        score: zodV3.union([zodV3.string(), zodV3.number()]),
         reasoning: zodV3.string(),
       }),
       config: apiKey.config,

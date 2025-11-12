@@ -66,6 +66,7 @@ export const env = createEnv({
       .enum(["true", "false"])
       .optional()
       .default("false"),
+    // PowerRAG Configuration - moved to client schema
     // Telemetry
     TELEMETRY_ENABLED: z.enum(["true", "false"]).optional(),
     // AUTH
@@ -302,6 +303,18 @@ export const env = createEnv({
       .enum(["true", "false"])
       .optional()
       .default("true"),
+    // PowerRAG Configuration
+    NEXT_PUBLIC_LANGFUSE_POWERRAG_HOST: z
+      .string()
+      .optional()
+      .default("6.13.51.219"),
+    NEXT_PUBLIC_LANGFUSE_POWERRAG_PORT: z.coerce
+      .number()
+      .positive()
+      .default(5001),
+    NEXT_PUBLIC_LANGFUSE_POWERRAG_PROTOCOL: z
+      .enum(["http", "https"])
+      .default("http"),
   },
 
   /**
@@ -504,6 +517,13 @@ export const env = createEnv({
     // Playground
     NEXT_PUBLIC_LANGFUSE_PLAYGROUND_STREAMING_ENABLED_DEFAULT:
       process.env.NEXT_PUBLIC_LANGFUSE_PLAYGROUND_STREAMING_ENABLED_DEFAULT,
+    // PowerRAG Configuration
+    NEXT_PUBLIC_LANGFUSE_POWERRAG_HOST:
+      process.env.NEXT_PUBLIC_LANGFUSE_POWERRAG_HOST,
+    NEXT_PUBLIC_LANGFUSE_POWERRAG_PORT:
+      process.env.NEXT_PUBLIC_LANGFUSE_POWERRAG_PORT,
+    NEXT_PUBLIC_LANGFUSE_POWERRAG_PROTOCOL:
+      process.env.NEXT_PUBLIC_LANGFUSE_POWERRAG_PROTOCOL,
     // EE License
     LANGFUSE_EE_LICENSE_KEY: process.env.LANGFUSE_EE_LICENSE_KEY,
     ADMIN_API_KEY: process.env.ADMIN_API_KEY,
@@ -543,6 +563,8 @@ export const env = createEnv({
     SLACK_CLIENT_ID: process.env.SLACK_CLIENT_ID,
     SLACK_CLIENT_SECRET: process.env.SLACK_CLIENT_SECRET,
     SLACK_STATE_SECRET: process.env.SLACK_STATE_SECRET,
+    // PowerRAG Configuration
+    // PowerRAG Configuration - moved to client schema
   },
   // Skip validation in Docker builds
   // DOCKER_BUILD is set in Dockerfile

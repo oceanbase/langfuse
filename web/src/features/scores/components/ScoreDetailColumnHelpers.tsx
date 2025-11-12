@@ -142,14 +142,15 @@ export const constructIndividualScoreColumns = <
 
 export const getScoreGroupColumnProps = (
   isLoading: boolean,
+  t: (key: string) => string,
   config = {
     accessorKey: "scores",
-    header: "Scores",
+    header: "",
     id: "scores",
   },
 ) => ({
   accessorKey: config.accessorKey,
-  header: config.header,
+  header: config.header || t("common.labels.scores"),
   id: config.id,
   enableHiding: true,
   hideByDefault: true,

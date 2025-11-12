@@ -303,50 +303,60 @@ export const createEvalJobs = async ({
     let traceExists = false;
     let traceTimestamp: Date | undefined = cachedTrace?.timestamp;
 
-    // Use cached trace for in-memory filtering when possible, i.e. all fields can
-    // be checked in-memory.
-    const traceFilter = config.target_object === "trace" ? validatedFilter : [];
-    if (cachedTrace && !requiresDatabaseLookup(traceFilter)) {
-      // Evaluate filter in memory using the cached trace
-      traceExists = InMemoryFilterService.evaluateFilter(
-        cachedTrace,
-        traceFilter,
-        mapTraceFilterColumn,
-      );
+    // Only check trace existence for trace configs or if we have a cached trace
+    if (config.target_object === "trace" || cachedTrace) {
+      // Use cached trace for in-memory filtering when possible, i.e. all fields can
+      // be checked in-memory.
+      const traceFilter =
+        config.target_object === "trace" ? validatedFilter : [];
+      if (cachedTrace && !requiresDatabaseLookup(traceFilter)) {
+        // Evaluate filter in memory using the cached trace
+        traceExists = InMemoryFilterService.evaluateFilter(
+          cachedTrace,
+          traceFilter,
+          mapTraceFilterColumn,
+        );
 
-      recordIncrement("langfuse.evaluation-execution.trace_cache_check", 1, {
-        matches: traceExists ? "true" : "false",
-      });
-      logger.debug("Evaluated trace filter in memory", {
-        traceId: event.traceId,
-        configId: config.id,
-        matches: traceExists,
-        filterCount: traceFilter.length,
-      });
+        recordIncrement("langfuse.evaluation-execution.trace_cache_check", 1, {
+          matches: traceExists ? "true" : "false",
+        });
+        logger.debug("Evaluated trace filter in memory", {
+          traceId: event.traceId,
+          configId: config.id,
+          matches: traceExists,
+          filterCount: traceFilter.length,
+        });
+      } else {
+        // Fall back to database query for complex filters or when no cached trace
+        const { exists, timestamp } = await checkTraceExistsAndGetTimestamp({
+          projectId: event.projectId,
+          traceId: event.traceId,
+          // Fallback to jobTimestamp if no payload timestamp is set to allow for successful retry attempts.
+          timestamp:
+            "timestamp" in event
+              ? new Date(event.timestamp)
+              : new Date(jobTimestamp),
+          filter: traceFilter,
+          maxTimeStamp,
+          exactTimestamp:
+            "exactTimestamp" in event && event.exactTimestamp
+              ? new Date(event.exactTimestamp)
+              : undefined,
+        });
+        traceExists = exists;
+        traceTimestamp = timestamp;
+        recordIncrement("langfuse.evaluation-execution.trace_db_lookup", 1, {
+          hasCached: Boolean(cachedTrace).toString(),
+          requiredDatabaseLookup: requiresDatabaseLookup(traceFilter)
+            ? "true"
+            : "false",
+        });
+      }
     } else {
-      // Fall back to database query for complex filters or when no cached trace
-      const { exists, timestamp } = await checkTraceExistsAndGetTimestamp({
-        projectId: event.projectId,
+      // For dataset configs without cached trace, we don't need to check trace existence
+      logger.debug("Skipping trace existence check for dataset config", {
+        configId: config.id,
         traceId: event.traceId,
-        // Fallback to jobTimestamp if no payload timestamp is set to allow for successful retry attempts.
-        timestamp:
-          "timestamp" in event
-            ? new Date(event.timestamp)
-            : new Date(jobTimestamp),
-        filter: traceFilter,
-        maxTimeStamp,
-        exactTimestamp:
-          "exactTimestamp" in event && event.exactTimestamp
-            ? new Date(event.exactTimestamp)
-            : undefined,
-      });
-      traceExists = exists;
-      traceTimestamp = timestamp;
-      recordIncrement("langfuse.evaluation-execution.trace_db_lookup", 1, {
-        hasCached: Boolean(cachedTrace).toString(),
-        requiredDatabaseLookup: requiresDatabaseLookup(traceFilter)
-          ? "true"
-          : "false",
       });
     }
 
@@ -378,17 +388,29 @@ export const createEvalJobs = async ({
           postgresExecution: async () => {
             // Otherwise, try to find the dataset item id from datasetRunItems.
             // Here, we can search for the traceId and projectId and should only get one result.
-            const datasetItems = await prisma.$queryRaw<
-              Array<{ id: string }>
-            >(Prisma.sql`
-              SELECT dataset_item_id as id
-              FROM dataset_run_items as dri
-              JOIN dataset_items as di ON di.id = dri.dataset_item_id AND di.project_id = ${event.projectId}
-              WHERE dri.project_id = ${event.projectId}
-                AND dri.trace_id = ${event.traceId}
-                ${condition}
-            `);
-            return datasetItems.shift();
+            if (event.traceId) {
+              const datasetItems = await prisma.$queryRaw<
+                Array<{ id: string }>
+              >(Prisma.sql`
+                SELECT dataset_item_id as id
+                FROM dataset_run_items as dri
+                JOIN dataset_items as di ON di.id = dri.dataset_item_id AND di.project_id = ${event.projectId}
+                WHERE dri.project_id = ${event.projectId}
+                  AND dri.trace_id = ${event.traceId}
+                  ${condition}
+              `);
+              return datasetItems.shift();
+            } else {
+              // If no traceId, we can't find dataset items through dataset run items
+              logger.debug(
+                "No traceId provided, cannot find dataset items through dataset run items",
+                {
+                  configId: config.id,
+                  projectId: event.projectId,
+                },
+              );
+              return undefined;
+            }
           },
           clickhouseExecution: async () => {
             // If the cached items are not null, we fetched all available datasetItemIds from the DB.
@@ -405,13 +427,27 @@ export const createEvalJobs = async ({
                 ),
               );
             } else {
-              const datasetItemIds = await getDatasetItemIdsByTraceIdCh({
-                projectId: event.projectId,
-                traceId: event.traceId,
-                filter:
-                  config.target_object === "dataset" ? validatedFilter : [],
-              });
-              return datasetItemIds.shift();
+              // For dataset configs, we can work without trace if needed
+              if (event.traceId) {
+                const datasetItemIds = await getDatasetItemIdsByTraceIdCh({
+                  projectId: event.projectId,
+                  traceId: event.traceId,
+                  filter:
+                    config.target_object === "dataset" ? validatedFilter : [],
+                });
+                return datasetItemIds.shift();
+              } else {
+                // If no traceId, we can't find dataset items through dataset run items
+                // This is a limitation of the current design
+                logger.debug(
+                  "No traceId provided, cannot find dataset items through dataset run items",
+                  {
+                    configId: config.id,
+                    projectId: event.projectId,
+                  },
+                );
+                return undefined;
+              }
             }
           },
         });
@@ -466,7 +502,14 @@ export const createEvalJobs = async ({
 
     // If we matched a trace for a trace event, we create a job or
     // if we have both trace and datasetItem.
-    if (traceExists && (!isDatasetConfig || Boolean(datasetItem))) {
+    // For dataset configs, we can create jobs even without trace if we have a datasetItem
+    const shouldCreateJob =
+      // For trace configs: need trace to exist
+      (config.target_object === "trace" && traceExists) ||
+      // For dataset configs: need datasetItem, trace is optional
+      (config.target_object === "dataset" && Boolean(datasetItem));
+
+    if (shouldCreateJob) {
       const jobExecutionId = randomUUID();
 
       // deduplication: if a job exists already for a trace event, we do not create a new one.
@@ -536,7 +579,13 @@ export const createEvalJobs = async ({
     } else {
       // if we do not have a match, and execution exists, we mark the job as cancelled
       // we do this, because a second trace event might 'deselect' a trace
-      logger.debug(`Eval job for config ${config.id} did not match trace`);
+      if (config.target_object === "trace") {
+        logger.debug(`Eval job for config ${config.id} did not match trace`);
+      } else if (config.target_object === "dataset") {
+        logger.debug(
+          `Eval job for config ${config.id} did not find matching dataset item`,
+        );
+      }
       if (existingJob.length > 0) {
         logger.debug(
           `Cancelling eval job for config ${config.id} and trace ${event.traceId}`,
@@ -700,21 +749,98 @@ export const evaluate = async ({
     } as const,
   ];
 
-  const parsedLLMOutput = await backOff(
-    async () =>
-      await callStructuredLLM(
-        event.jobExecutionId,
-        modelConfig.config.apiKey,
-        messages,
-        modelConfig.config.modelParams ?? {},
-        modelConfig.config.provider,
-        modelConfig.config.model,
-        evalScoreSchema,
-      ),
+  // 添加详细的 LLM 调用日志
+  logger.info(
+    `🔍 开始 LLM 评估调用 - 任务ID: ${event.jobExecutionId}, 项目ID: ${event.projectId}`,
     {
-      numOfAttempts: 1, // turn off retries as Langchain is doing that for us already.
+      jobExecutionId: event.jobExecutionId,
+      projectId: event.projectId,
+      provider: modelConfig.config.provider,
+      model: modelConfig.config.model,
+      baseURL: modelConfig.config.apiKey.baseURL,
+      promptLength: prompt.length,
+      messagesCount: messages.length,
     },
   );
+
+  logger.info(
+    `📤 发送评估请求到 LLM - 模型: ${modelConfig.config.model}, Provider: ${modelConfig.config.provider}`,
+    {
+      jobExecutionId: event.jobExecutionId,
+      model: modelConfig.config.model,
+      provider: modelConfig.config.provider,
+      baseURL: modelConfig.config.apiKey.baseURL,
+      prompt: prompt.substring(0, 500) + (prompt.length > 500 ? "..." : ""), // 只记录前500个字符
+    },
+  );
+
+  const startTime = Date.now();
+  let parsedLLMOutput;
+  let llmCallSuccess = false;
+  let llmCallError = null;
+
+  try {
+    parsedLLMOutput = await backOff(
+      async () =>
+        await callStructuredLLM(
+          event.jobExecutionId,
+          modelConfig.config.apiKey,
+          messages,
+          modelConfig.config.modelParams ?? {},
+          modelConfig.config.provider,
+          modelConfig.config.model,
+          evalScoreSchema,
+        ),
+      {
+        numOfAttempts: 1, // turn off retries as Langchain is doing that for us already.
+      },
+    );
+
+    const endTime = Date.now();
+    const duration = endTime - startTime;
+    llmCallSuccess = true;
+
+    logger.info(
+      `✅ LLM 评估调用成功 - 任务ID: ${event.jobExecutionId}, 耗时: ${duration}ms`,
+      {
+        jobExecutionId: event.jobExecutionId,
+        duration,
+        model: modelConfig.config.model,
+        provider: modelConfig.config.provider,
+        score: parsedLLMOutput.score,
+        reasoningLength: parsedLLMOutput.reasoning.length,
+      },
+    );
+
+    logger.info(
+      `📊 LLM 评估结果 - 分数: ${parsedLLMOutput.score}, 推理: ${parsedLLMOutput.reasoning.substring(0, 200)}${parsedLLMOutput.reasoning.length > 200 ? "..." : ""}`,
+      {
+        jobExecutionId: event.jobExecutionId,
+        score: parsedLLMOutput.score,
+        reasoning: parsedLLMOutput.reasoning,
+      },
+    );
+  } catch (error) {
+    const endTime = Date.now();
+    const duration = endTime - startTime;
+    llmCallSuccess = false;
+    llmCallError = error;
+
+    logger.error(
+      `❌ LLM 评估调用失败 - 任务ID: ${event.jobExecutionId}, 耗时: ${duration}ms, 错误: ${error}`,
+      {
+        jobExecutionId: event.jobExecutionId,
+        duration,
+        model: modelConfig.config.model,
+        provider: modelConfig.config.provider,
+        error: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
+      },
+    );
+
+    // 重新抛出错误，让上层处理
+    throw error;
+  }
 
   logger.debug(
     `Evaluating job ${event.jobExecutionId} Parsed LLM output ${JSON.stringify(parsedLLMOutput)}`,

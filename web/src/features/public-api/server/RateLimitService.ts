@@ -225,14 +225,14 @@ const getPlanBasedRateLimitConfig = (
         case "ingestion":
           return {
             resource: "ingestion",
-            points: 1000,
-            durationInSec: 60,
+            points: null,
+            durationInSec: null,
           };
         case "legacy-ingestion":
           return {
             resource: "legacy-ingestion",
-            points: 100,
-            durationInSec: 60,
+            points: null,
+            durationInSec: null,
           };
         case "prompts":
           return {
@@ -243,26 +243,26 @@ const getPlanBasedRateLimitConfig = (
         case "public-api":
           return {
             resource: "public-api",
-            points: 30,
-            durationInSec: 60,
+            points: null,
+            durationInSec: null,
           };
         case "datasets":
           return {
             resource: "datasets",
-            points: 100,
-            durationInSec: 60,
+            points: null,
+            durationInSec: null,
           };
         case "public-api-metrics":
           return {
             resource: "public-api-metrics",
-            points: 100,
-            durationInSec: 86400, // 100 requests per day
+            points: null,
+            durationInSec: null,
           };
         case "public-api-daily-metrics-legacy":
           return {
             resource: "public-api-daily-metrics-legacy",
-            points: 10,
-            durationInSec: 86400, // 10 requests per day
+            points: null,
+            durationInSec: null,
           };
         default:
           const exhaustiveCheck: never = resource;

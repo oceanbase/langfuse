@@ -1,10 +1,12 @@
 services:
   langfuse-web:
+    image: ${LANGFUSE_WEB_IMAGE:-powerrag-langfuse-web:v1.3.0} # 使用环境变量，带默认值
     build:
       dockerfile: ./web/Dockerfile
       context: .
       args:
         - NEXT_PUBLIC_LANGFUSE_CLOUD_REGION=${NEXT_PUBLIC_LANGFUSE_CLOUD_REGION}
+        - PUPPETEER_SKIP_DOWNLOAD=true
     depends_on: &langfuse-depends-on
       postgres:
         condition: service_healthy
@@ -15,15 +17,32 @@ services:
       clickhouse:
         condition: service_healthy
     ports:
-      - "3000:3000"
+      - "${WEB_PORT:-3001}:3001"
     environment: &langfuse-web-env
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/postgres
-      NEXTAUTH_SECRET: mysecret
-      SALT: mysalt
-      ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000000" # generate via `openssl rand -hex 32`
-      NEXTAUTH_URL: http://localhost:3000
+      # 数据库配置
+      # 如果 DATABASE_URL 未定义，entrypoint.sh 会从 DATABASE_* 变量自动构建
+      DATABASE_URL: ${DATABASE_URL:-}
+      DIRECT_URL: ${DIRECT_URL:-}
+      DATABASE_HOST: ${DATABASE_HOST:-postgres:5432}
+      # 从 POSTGRES_* 变量或直接设置 DATABASE_* 变量
+      DATABASE_USERNAME: ${DATABASE_USERNAME:-${POSTGRES_USER:-postgres}}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-${POSTGRES_PASSWORD:-postgres}}
+      DATABASE_NAME: ${DATABASE_NAME:-${POSTGRES_DB:-postgres}}
+      DATABASE_ARGS: ${DATABASE_ARGS:-connection_limit=20&pool_timeout=20}
+      
+      # 认证配置
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-secret}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      SALT: ${SALT:-salt}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-0000000000000000000000000000000000000000000000000000000000000000}
+      
+      # 功能开关
       TELEMETRY_ENABLED: ${TELEMETRY_ENABLED:-true}
-      LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES: ${LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES:-false}
+      LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES: ${LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES:-true}
+      NEXT_PUBLIC_LANGFUSE_CLOUD_REGION: ${NEXT_PUBLIC_LANGFUSE_CLOUD_REGION:-DEV}
+      NEXT_PUBLIC_LANGFUSE_RUN_NEXT_INIT: ${NEXT_PUBLIC_LANGFUSE_RUN_NEXT_INIT:-false}
+      
+      # 初始化配置
       LANGFUSE_INIT_ORG_ID: ${LANGFUSE_INIT_ORG_ID:-}
       LANGFUSE_INIT_ORG_NAME: ${LANGFUSE_INIT_ORG_NAME:-}
       LANGFUSE_INIT_PROJECT_ID: ${LANGFUSE_INIT_PROJECT_ID:-}
@@ -33,18 +52,16 @@ services:
       LANGFUSE_INIT_USER_EMAIL: ${LANGFUSE_INIT_USER_EMAIL:-}
       LANGFUSE_INIT_USER_NAME: ${LANGFUSE_INIT_USER_NAME:-}
       LANGFUSE_INIT_USER_PASSWORD: ${LANGFUSE_INIT_USER_PASSWORD:-}
+      
+      # ClickHouse 配置
       CLICKHOUSE_MIGRATION_URL: ${CLICKHOUSE_MIGRATION_URL:-clickhouse://clickhouse:9000}
       CLICKHOUSE_URL: ${CLICKHOUSE_URL:-http://clickhouse:8123}
       CLICKHOUSE_USER: ${CLICKHOUSE_USER:-clickhouse}
       CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-clickhouse}
       CLICKHOUSE_CLUSTER_ENABLED: ${CLICKHOUSE_CLUSTER_ENABLED:-false}
-      LANGFUSE_S3_EVENT_UPLOAD_BUCKET: ${LANGFUSE_S3_EVENT_UPLOAD_BUCKET:-langfuse}
-      LANGFUSE_S3_EVENT_UPLOAD_REGION: ${LANGFUSE_S3_EVENT_UPLOAD_REGION:-us-east-1}
-      LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: ${LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID:-minio}
-      LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: ${LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY:-miniosecret}
-      LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: ${LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT:-http://minio:9000}
-      LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: ${LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE:-true}
-      LANGFUSE_S3_EVENT_UPLOAD_PREFIX: ${LANGFUSE_S3_EVENT_UPLOAD_PREFIX:-events/}
+      CLICKHOUSE_MAX_OPEN_CONNECTIONS: ${CLICKHOUSE_MAX_OPEN_CONNECTIONS:-50}
+      
+      # Redis 配置
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
       REDIS_AUTH: ${REDIS_AUTH:-myredissecret}
@@ -52,22 +69,96 @@ services:
       REDIS_TLS_CA: ${REDIS_TLS_CA:-/certs/ca.crt}
       REDIS_TLS_CERT: ${REDIS_TLS_CERT:-/certs/redis.crt}
       REDIS_TLS_KEY: ${REDIS_TLS_KEY:-/certs/redis.key}
+      
+      # S3 事件上传配置
+      LANGFUSE_S3_EVENT_UPLOAD_BUCKET: ${LANGFUSE_S3_EVENT_UPLOAD_BUCKET:-langfuse}
+      LANGFUSE_S3_EVENT_UPLOAD_REGION: ${LANGFUSE_S3_EVENT_UPLOAD_REGION:-us-east-1}
+      LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: ${LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID:-minio}
+      LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: ${LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY:-miniosecret}
+      LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: ${LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT:-http://minio:9000}
+      LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: ${LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE:-true}
+      LANGFUSE_S3_EVENT_UPLOAD_PREFIX: ${LANGFUSE_S3_EVENT_UPLOAD_PREFIX:-events/}
+      
+      # S3 媒体上传配置
+      LANGFUSE_S3_MEDIA_UPLOAD_BUCKET: ${LANGFUSE_S3_MEDIA_UPLOAD_BUCKET:-langfuse}
+      LANGFUSE_S3_MEDIA_UPLOAD_REGION: ${LANGFUSE_S3_MEDIA_UPLOAD_REGION:-us-east-1}
+      LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID: ${LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID:-minio}
+      LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY: ${LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY:-miniosecret}
+      LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT: ${LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT:-http://minio:9000}
+      LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE: ${LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE:-true}
+      LANGFUSE_S3_MEDIA_UPLOAD_PREFIX: ${LANGFUSE_S3_MEDIA_UPLOAD_PREFIX:-media/}
+      
+      # S3 批量导出配置
+      LANGFUSE_S3_BATCH_EXPORT_ENABLED: ${LANGFUSE_S3_BATCH_EXPORT_ENABLED:-true}
+      LANGFUSE_S3_BATCH_EXPORT_BUCKET: ${LANGFUSE_S3_BATCH_EXPORT_BUCKET:-langfuse}
+      LANGFUSE_S3_BATCH_EXPORT_REGION: ${LANGFUSE_S3_BATCH_EXPORT_REGION:-us-east-1}
+      LANGFUSE_S3_BATCH_EXPORT_ACCESS_KEY_ID: ${LANGFUSE_S3_BATCH_EXPORT_ACCESS_KEY_ID:-minio}
+      LANGFUSE_S3_BATCH_EXPORT_SECRET_ACCESS_KEY: ${LANGFUSE_S3_BATCH_EXPORT_SECRET_ACCESS_KEY:-miniosecret}
+      LANGFUSE_S3_BATCH_EXPORT_ENDPOINT: ${LANGFUSE_S3_BATCH_EXPORT_ENDPOINT:-http://minio:9000}
+      LANGFUSE_S3_BATCH_EXPORT_FORCE_PATH_STYLE: ${LANGFUSE_S3_BATCH_EXPORT_FORCE_PATH_STYLE:-true}
+      LANGFUSE_S3_BATCH_EXPORT_PREFIX: ${LANGFUSE_S3_BATCH_EXPORT_PREFIX:-exports/}
+      
+      # 邮件配置
+      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-}
+      SMTP_CONNECTION_URL: ${SMTP_CONNECTION_URL:-}
+      
+      # Slack 配置
+      SLACK_CLIENT_ID: ${SLACK_CLIENT_ID:-your_slack_client_id}
+      SLACK_CLIENT_SECRET: ${SLACK_CLIENT_SECRET:-your_slack_client_secret}
+      SLACK_STATE_SECRET: ${SLACK_STATE_SECRET:-your_slack_state_secret}
+      
+      # PowerRAG 配置 - 客户端
+      NEXT_PUBLIC_LANGFUSE_POWERRAG_HOST: ${NEXT_PUBLIC_LANGFUSE_POWERRAG_HOST:-6.13.51.219}
+      NEXT_PUBLIC_LANGFUSE_POWERRAG_PORT: ${NEXT_PUBLIC_LANGFUSE_POWERRAG_PORT:-5001}
+      NEXT_PUBLIC_LANGFUSE_POWERRAG_PROTOCOL: ${NEXT_PUBLIC_LANGFUSE_POWERRAG_PROTOCOL:-http}
+      LANGFUSE_PROJECT_ID: ${LANGFUSE_PROJECT_ID:-powerrag}
+      
+      # PowerRAG 配置 - 服务端
+      LANGFUSE_POWERRAG_HOST: ${LANGFUSE_POWERRAG_HOST:-6.13.51.219}
+      LANGFUSE_POWERRAG_PORT: ${LANGFUSE_POWERRAG_PORT:-5001}
+      LANGFUSE_POWERRAG_PROTOCOL: ${LANGFUSE_POWERRAG_PROTOCOL:-http}
+      LANGFUSE_LOG_FORMAT: ${LANGFUSE_LOG_FORMAT:-text}
+      
+      # 实验性功能配置
+      LANGFUSE_EXPERIMENT_DATASET_RUN_ITEMS_WRITE_CH: ${LANGFUSE_EXPERIMENT_DATASET_RUN_ITEMS_WRITE_CH:-true}
+      LANGFUSE_EXPERIMENT_DATASET_RUN_ITEMS_READ_CH: ${LANGFUSE_EXPERIMENT_DATASET_RUN_ITEMS_READ_CH:-true}
+      LANGFUSE_EXPERIMENT_INSERT_INTO_TRACES_TABLE: ${LANGFUSE_EXPERIMENT_INSERT_INTO_TRACES_TABLE:-true}
+      LANGFUSE_EXPERIMENT_RETURN_NEW_RESULT: ${LANGFUSE_EXPERIMENT_RETURN_NEW_RESULT:-true}
+      LANGFUSE_EXPERIMENT_RETURN_NEW_RESULT_SHORT_TERM: ${LANGFUSE_EXPERIMENT_RETURN_NEW_RESULT_SHORT_TERM:-true}
+      LANGFUSE_EXPERIMENT_INSERT_INTO_AGGREGATING_MERGE_TREES: ${LANGFUSE_EXPERIMENT_INSERT_INTO_AGGREGATING_MERGE_TREES:-true}
+      LANGFUSE_EXPERIMENT_WHITELISTED_AMT_TABLES: ${LANGFUSE_EXPERIMENT_WHITELISTED_AMT_TABLES:-}
+      LANGFUSE_EXPERIMENT_COMPARE_READ_FROM_AGGREGATING_MERGE_TREES: ${LANGFUSE_EXPERIMENT_COMPARE_READ_FROM_AGGREGATING_MERGE_TREES:-true}
+      LANGFUSE_EXPERIMENT_ADD_QUERY_RESULT_TO_SPAN_PROJECT_IDS: ${LANGFUSE_EXPERIMENT_ADD_QUERY_RESULT_TO_SPAN_PROJECT_IDS:-cmew8ey3w0008hz4opti632jf}
+      
+      # 性能调优配置
+      LANGFUSE_INGESTION_QUEUE_DELAY_MS: ${LANGFUSE_INGESTION_QUEUE_DELAY_MS:-}
+      LANGFUSE_INGESTION_CLICKHOUSE_WRITE_INTERVAL_MS: ${LANGFUSE_INGESTION_CLICKHOUSE_WRITE_INTERVAL_MS:-}
+      
+      # 应用端口
+      PORT: ${PORT:-3000}
+      HOSTNAME: 0.0.0.0
+      
+      # 迁移控制
+      LANGFUSE_AUTO_POSTGRES_MIGRATION_DISABLED: ${LANGFUSE_AUTO_POSTGRES_MIGRATION_DISABLED:-false}
+      LANGFUSE_AUTO_CLICKHOUSE_MIGRATION_DISABLED: ${LANGFUSE_AUTO_CLICKHOUSE_MIGRATION_DISABLED:-false}
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/public/health"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3001/api/public/health"]
       interval: 30s
       timeout: 10s
       retries: 3
 
   langfuse-worker:
+    image: ${LANGFUSE_WORKER_IMAGE:-powerrag-langfuse-worker:v1.0.0} # 使用环境变量，带默认值
     build:
       dockerfile: ./worker/Dockerfile
       context: .
       args:
         - NEXT_PUBLIC_LANGFUSE_CLOUD_REGION=${NEXT_PUBLIC_LANGFUSE_CLOUD_REGION}
+        - PUPPETEER_SKIP_DOWNLOAD=true
     depends_on: *langfuse-depends-on
     ports:
-      - "3030:3030"
+      - "${WORKER_PORT:-3030}:3030"
     environment:
       <<: *langfuse-web-env
     restart: always
@@ -78,18 +169,18 @@ services:
       retries: 3
 
   clickhouse:
-    image: docker.io/clickhouse/clickhouse-server
+    image: docker.io/clickhouse/clickhouse-server:25.8.2.29
     user: "101:101"
     environment:
       CLICKHOUSE_DB: default
-      CLICKHOUSE_USER: clickhouse
-      CLICKHOUSE_PASSWORD: clickhouse
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-clickhouse}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-clickhouse}
     volumes:
-      - langfuse_clickhouse_data:/var/lib/clickhouse
-      - langfuse_clickhouse_logs:/var/log/clickhouse-server
+      - clickhouse_data:/var/lib/clickhouse
+      - clickhouse_logs:/var/log/clickhouse-server
     ports:
-      - "8123:8123"
-      - "9000:9000"
+      - "${CLICKHOUSE_HTTP_PORT:-8123}:8123"
+      - "${CLICKHOUSE_NATIVE_PORT:-9000}:9000"
     healthcheck:
       test: wget --no-verbose --tries=1 --spider http://localhost:8123/ping || exit 1
       interval: 5s
@@ -103,11 +194,11 @@ services:
     # create the 'langfuse' bucket before starting the service
     command: -c 'mkdir -p /data/langfuse && minio server --address ":9000" --console-address ":9001" /data'
     environment:
-      MINIO_ROOT_USER: minio
-      MINIO_ROOT_PASSWORD: miniosecret
+      MINIO_ROOT_USER: ${LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID:-minio}
+      MINIO_ROOT_PASSWORD: ${LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY:-miniosecret}
     ports:
-      - "9090:9000"
-      - "9091:9001"
+      - "${MINIO_HOST_PORT:-9090}:9000"
+      - "${MINIO_CONSOLE_HOST_PORT:-9091}:9001"
     volumes:
       - langfuse_minio_data:/data
     healthcheck:
@@ -123,7 +214,7 @@ services:
     command: >
       --requirepass ${REDIS_AUTH:-myredissecret}
     ports:
-      - 6379:6379
+      - "${REDIS_PORT:-6379}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 3s
@@ -139,20 +230,20 @@ services:
       timeout: 3s
       retries: 10
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
     ports:
-      - 5432:5432
+      - "${POSTGRES_PORT:-0.0.0.0:5432}:5432"
     volumes:
       - langfuse_postgres_data:/var/lib/postgresql/data
 
 volumes:
   langfuse_postgres_data:
     driver: local
-  langfuse_clickhouse_data:
+  clickhouse_data:
     driver: local
-  langfuse_clickhouse_logs:
+  clickhouse_logs:
     driver: local
   langfuse_minio_data:
     driver: local

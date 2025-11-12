@@ -13,7 +13,7 @@ CREATE TABLE blob_storage_file_log
     `updated_at`  DateTime64(3) DEFAULT now(),
     event_ts DateTime64(3),
     is_deleted UInt8,
-) ENGINE = ReplacingMergeTree(event_ts, is_deleted)
+) ENGINE = ReplacingMergeTree(event_ts)
       ORDER BY (
                 project_id,
                 entity_type,

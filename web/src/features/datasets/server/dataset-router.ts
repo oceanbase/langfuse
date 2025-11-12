@@ -85,10 +85,18 @@ type RunItemsByIdQueryResult = {
 };
 
 const formatDatasetItemData = (data: string | null | undefined) => {
-  if (data === "") return Prisma.DbNull;
+  if (data === "" || data === null || data === undefined) return Prisma.DbNull;
+
   try {
-    return !!data ? (JSON.parse(data) as Prisma.InputJsonObject) : undefined;
+    // 首先尝试解析为JSON
+    return JSON.parse(data) as Prisma.InputJsonObject;
   } catch (e) {
+    // 如果JSON解析失败，检查是否是普通字符串
+    if (typeof data === "string") {
+      // 如果是普通字符串，直接返回字符串
+      return data;
+    }
+
     logger.info(
       "[trpc.datasets.formatDatasetItemData] failed to parse dataset item data",
       e,
@@ -1079,6 +1087,24 @@ export const datasetRouter = createTRPCRouter({
         ),
     )
     .query(async ({ input, ctx }) => {
+      console.error("🔥🔥🔥 API ENDPOINT CALLED - runitemsByRunIdOrItemId");
+      console.error(`🔍🔍🔍 runitemsByRunIdOrItemId called with:`, {
+        projectId: input.projectId,
+        datasetRunId: input.datasetRunId,
+        datasetItemId: input.datasetItemId,
+        page: input.page,
+        limit: input.limit,
+      });
+
+      // Debug log to confirm this code is being executed
+      if (input.projectId === "cmew8ey3w0008hz4opti632jf") {
+        console.error(
+          `🚨🚨🚨 DEBUG: Processing dataset run for project ${input.projectId}`,
+        );
+      }
+
+      // Force a console.log to see if this code is executed
+      console.log("=== DATASET ROUTER EXECUTED ===");
       return await executeWithDatasetRunItemsStrategy({
         input,
         operationType: DatasetRunItemsOperationType.READ,

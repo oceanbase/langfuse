@@ -1,6 +1,7 @@
 import { Check, Save } from "lucide-react";
 import { useRouter } from "next/router";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/src/components/ui/button";
 import {
@@ -32,6 +33,7 @@ interface SaveToPromptButtonProps {
 export const SaveToPromptButton: React.FC<SaveToPromptButtonProps> = ({
   className,
 }) => {
+  const { t } = useTranslation();
   const [selectedPromptId, setSelectedPromptId] = useState("");
   const { modelParams, messages, output, promptVariables } =
     usePlaygroundContext();
@@ -98,14 +100,18 @@ export const SaveToPromptButton: React.FC<SaveToPromptButtonProps> = ({
       </PopoverTrigger>
       <PopoverContent>
         <Button className="mt-2 w-full" onClick={handleNewPrompt}>
-          Save as new prompt
+          {t("playground.prompts.saveAsNewPrompt")}
         </Button>
         <Divider />
         <InputCommand className="min-h-[8rem]">
-          <InputCommandInput placeholder="Search chat prompts..." />
+          <InputCommandInput
+            placeholder={t("playground.prompts.searchChatPrompts")}
+          />
           <InputCommandEmpty>
-            No chat prompt found
-            <DocPopup description="Prompts from the playground can only be saved to 'chat' prompts as they include multiple system/user messages." />
+            {t("playground.prompts.noChatPromptFound")}
+            <DocPopup
+              description={t("playground.prompts.playgroundPromptsDescription")}
+            />
           </InputCommandEmpty>
           <InputCommandGroup className="mt-2">
             <InputCommandList>
@@ -146,7 +152,7 @@ export const SaveToPromptButton: React.FC<SaveToPromptButtonProps> = ({
           disabled={!Boolean(selectedPromptId)}
           onClick={handleNewPromptVersion}
         >
-          Save as new prompt version
+          {t("playground.prompts.saveAsNewPromptVersion")}
         </Button>
       </PopoverContent>
     </Popover>
@@ -154,13 +160,14 @@ export const SaveToPromptButton: React.FC<SaveToPromptButtonProps> = ({
 };
 
 export function Divider() {
+  const { t } = useTranslation();
   return (
     <div className="my-3 flex flex-row justify-center align-middle">
       <div className="flex flex-1 flex-col">
         <div className="flex-1 border-b-2 border-gray-200" />
         <div className="flex-1" />
       </div>
-      <p className="mx-2 text-sm text-gray-400">or</p>
+      <p className="mx-2 text-sm text-gray-400">{t("playground.prompts.or")}</p>
       <div className="flex flex-1 flex-col">
         <div className="flex-1 border-b-2 border-gray-200" />
         <div className="flex-1" />

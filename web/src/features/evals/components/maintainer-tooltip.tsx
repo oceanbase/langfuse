@@ -6,6 +6,7 @@ import {
 } from "@/src/components/ui/tooltip";
 import { RagasLogoIcon } from "@/src/features/evals/components/ragas-logo";
 import { UserCircle2Icon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 function MaintainerIcon({ maintainer }: { maintainer: string }) {
   if (maintainer.includes("Ragas")) {
@@ -18,12 +19,29 @@ function MaintainerIcon({ maintainer }: { maintainer: string }) {
 }
 
 export function MaintainerTooltip({ maintainer }: { maintainer: string }) {
+  const { t } = useTranslation();
+
+  // 根据maintainer字符串确定翻译key
+  const getMaintainerTranslationKey = (maintainer: string) => {
+    if (maintainer.includes("Ragas")) {
+      return "evaluation.eval.pages.ragasMaintained";
+    } else if (maintainer.includes("Langfuse")) {
+      return "evaluation.eval.pages.langfuseMaintained";
+    } else if (maintainer.includes("User")) {
+      return "evaluation.eval.pages.userMaintained";
+    } else {
+      return "evaluation.eval.pages.notAvailable";
+    }
+  };
+
   return (
     <Tooltip>
       <TooltipTrigger>
         <MaintainerIcon maintainer={maintainer} />
       </TooltipTrigger>
-      <TooltipContent>{maintainer}</TooltipContent>
+      <TooltipContent>
+        {t(getMaintainerTranslationKey(maintainer))}
+      </TooltipContent>
     </Tooltip>
   );
 }

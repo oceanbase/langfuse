@@ -5,38 +5,37 @@ import {
 } from "@/src/components/ui/splash-screen";
 import { Users, LineChart, Filter, BarChart4 } from "lucide-react";
 import Link from "next/link";
+import { useTranslation } from "react-i18next";
+
 export function UsersOnboarding() {
+  const { t } = useTranslation();
   const valuePropositions: ValueProposition[] = [
     {
-      title: "Track user interactions",
-      description:
-        "Attribute data in Langfuse to specific users by adding a userId to your traces",
+      title: t("user.features.trackUserInteractions.title"),
+      description: t("user.features.trackUserInteractions.description"),
       icon: <Users className="h-4 w-4" />,
     },
     {
-      title: "Analyze user behavior",
-      description:
-        "Understand how different users interact with your LLM applications",
+      title: t("user.features.analyzeUserBehavior.title"),
+      description: t("user.features.analyzeUserBehavior.description"),
       icon: <LineChart className="h-4 w-4" />,
     },
     {
-      title: "Filter by user segments",
-      description:
-        "Compare performance across different user segments to identify patterns",
+      title: t("user.features.filterByUserSegments.title"),
+      description: t("user.features.filterByUserSegments.description"),
       icon: <Filter className="h-4 w-4" />,
     },
     {
-      title: "Monitor usage metrics",
-      description:
-        "Track token usage, costs, and other metrics on a per-user basis",
+      title: t("user.features.monitorUsageMetrics.title"),
+      description: t("user.features.monitorUsageMetrics.description"),
       icon: <BarChart4 className="h-4 w-4" />,
     },
   ];
 
   return (
     <SplashScreen
-      title="Get Started with User Tracking"
-      description="Correlate costs, evaluations and other LLM Application metrics to specific users. Start tracking users to better understand how they interact with your LLM applications."
+      title={t("user.onboarding.getStartedTitle")}
+      description={t("user.onboarding.getStartedDescription")}
       valuePropositions={valuePropositions}
       gettingStarted={
         <span>

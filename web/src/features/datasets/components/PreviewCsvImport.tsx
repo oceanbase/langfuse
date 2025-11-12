@@ -23,6 +23,7 @@ import { MAX_FILE_SIZE_BYTES } from "@/src/features/datasets/components/UploadDa
 import { Progress } from "@/src/components/ui/progress";
 import { usePostHogClientCapture } from "@/src/features/posthog-analytics/usePostHogClientCapture";
 import { DialogBody, DialogFooter } from "@/src/components/ui/dialog";
+import { useTranslation } from "react-i18next";
 
 const MIN_CHUNK_SIZE = 1;
 const CHUNK_START_SIZE = 50;
@@ -119,6 +120,7 @@ export function PreviewCsvImport({
   setPreview: (preview: CsvPreviewResult | null) => void;
   setOpen?: (open: boolean) => void;
 }) {
+  const { t } = useTranslation();
   const capture = usePostHogClientCapture();
   const [selectedInputColumn, setSelectedInputColumn] = useState<Set<string>>(
     new Set(),
@@ -227,7 +229,10 @@ export function PreviewCsvImport({
     capture("dataset_item:upload_csv_form_submit");
     if (!csvFile) return;
     if (csvFile.size > MAX_FILE_SIZE_BYTES) {
-      showErrorToast("File too large", "Maximum file size is 10MB");
+      showErrorToast(
+        t("dataset.csvImport.fileTooLarge"),
+        t("dataset.csvImport.maxFileSize"),
+      );
       return;
     }
 
@@ -264,10 +269,36 @@ export function PreviewCsvImport({
               const itemMetadata =
                 parseColumns(metadata, row, headerMap) ?? undefined;
 
+              // 确保中文字符正确编码，避免双重JSON.stringify
+              const safeStringify = (value: any) => {
+                if (value === null || value === undefined) return null;
+                if (typeof value === "string") {
+                  // 添加调试信息
+                  if (index < 3) {
+                    // 只对前3行进行调试
+                    console.log(`Row ${index + 1} - Original string:`, value);
+                    console.log(
+                      `Row ${index + 1} - String length:`,
+                      value.length,
+                    );
+                    console.log(
+                      `Row ${index + 1} - String bytes:`,
+                      new TextEncoder().encode(value),
+                    );
+                  }
+                  return value;
+                }
+                return JSON.stringify(value);
+              };
+
+              const processedInput = safeStringify(itemInput);
+              const processedExpected = safeStringify(itemExpected);
+              const processedMetadata = safeStringify(itemMetadata);
+
               items.push({
-                input: JSON.stringify(itemInput),
-                expectedOutput: JSON.stringify(itemExpected),
-                metadata: JSON.stringify(itemMetadata),
+                input: processedInput,
+                expectedOutput: processedExpected,
+                metadata: processedMetadata,
                 datasetId,
               });
             } catch (error) {
@@ -309,11 +340,13 @@ export function PreviewCsvImport({
         status: "not-started",
       });
       if (error instanceof Error && processedCount === 0) {
-        showErrorToast("Failed to import all dataset items", error.message);
+        showErrorToast(t("dataset.csvImport.failedToImportAll"), error.message);
       } else {
         showErrorToast(
-          "Failed to import all dataset items",
-          `Please try again starting from row ${processedCount + 1}.`,
+          t("dataset.csvImport.failedToImportAll"),
+          t("dataset.csvImport.tryAgainFromRow", {
+            rowNumber: processedCount + 1,
+          }),
         );
       }
       return;
@@ -335,10 +368,13 @@ export function PreviewCsvImport({
       <DialogBody className="border-t">
         <Card className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden border-none pb-4">
           <CardHeader className="shrink-0 text-center">
-            <CardTitle className="text-lg">Import {preview.fileName}</CardTitle>
+            <CardTitle className="text-lg">
+              {t("dataset.csvImport.importFile", {
+                fileName: preview.fileName,
+              })}
+            </CardTitle>
             <CardDescription>
-              Map your CSV columns to dataset fields. The CSV file must have
-              column headers in the first row.
+              {t("dataset.csvImport.mapCsvColumns")}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex min-h-0 w-full flex-1 flex-col p-2">
@@ -350,7 +386,7 @@ export function PreviewCsvImport({
                 <div className="grid h-full grid-cols-2 gap-4 lg:grid-cols-4">
                   <ImportCard
                     id="input"
-                    title="Input"
+                    title={t("dataset.csvImport.input")}
                     columns={preview.columns.filter((col) =>
                       selectedInputColumn.has(col.name),
                     )}
@@ -371,7 +407,7 @@ export function PreviewCsvImport({
                   />
                   <ImportCard
                     id="expected"
-                    title="Expected Output"
+                    title={t("dataset.csvImport.expectedOutput")}
                     columns={preview.columns.filter((col) =>
                       selectedExpectedColumn.has(col.name),
                     )}
@@ -392,7 +428,7 @@ export function PreviewCsvImport({
                   />
                   <ImportCard
                     id="metadata"
-                    title="Metadata"
+                    title={t("dataset.csvImport.metadata")}
                     columns={preview.columns.filter((col) =>
                       selectedMetadataColumn.has(col.name),
                     )}
@@ -413,8 +449,8 @@ export function PreviewCsvImport({
                   />
                   <ImportCard
                     id="unmapped"
-                    title="Not mapped"
-                    info="These columns from your CSV will not be imported. Drag them to a field to include them."
+                    title={t("dataset.csvImport.notMapped")}
+                    info={t("dataset.csvImport.notMappedInfo")}
                     columns={preview.columns.filter((col) =>
                       excludedColumns.has(col.name),
                     )}
@@ -452,7 +488,7 @@ export function PreviewCsvImport({
             setCsvFile(null);
           }}
         >
-          Cancel
+          {t("common.actions.cancel")}
         </Button>
         <Button
           disabled={
@@ -464,7 +500,9 @@ export function PreviewCsvImport({
           loading={progress.status === "processing"}
           onClick={handleImport}
         >
-          {progress.status === "processing" ? "Importing..." : "Import"}
+          {progress.status === "processing"
+            ? t("common.status.importing")
+            : t("common.actions.import")}
         </Button>
         {progress.status === "processing" && (
           <div className="mt-2">

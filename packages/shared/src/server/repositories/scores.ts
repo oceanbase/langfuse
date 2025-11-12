@@ -351,11 +351,85 @@ export const getTraceScoresForDatasetRuns = async (
     },
   });
 
-  return rows.map((row) => ({
+  const scores = rows.map((row) => ({
     ...convertToScore({ ...row, metadata: {} }),
     datasetRunId: row.run_id,
     hasMetadata: !!row.has_metadata,
   }));
+
+  // Group scores by dataset run ID to check for Context F1 calculation
+  const scoresByRunId = new Map<string, any[]>();
+  scores.forEach((score) => {
+    const runId = score.datasetRunId;
+    if (!scoresByRunId.has(runId)) {
+      scoresByRunId.set(runId, []);
+    }
+    scoresByRunId.get(runId)!.push(score);
+  });
+
+  // Add calculated Context F1 scores where missing
+  const enhancedScores = [...scores];
+
+  for (const [runId, runScores] of scoresByRunId) {
+    // Check if Context F1 already exists
+    const hasContextF1 = runScores.some(
+      (s) => s.name === "Context F1" && s.dataType === "NUMERIC",
+    );
+
+    if (!hasContextF1) {
+      // Check if we have Context Precision and Context Recall
+      const precisionScore = runScores.find(
+        (s) => s.name === "Context Precision" && s.dataType === "NUMERIC",
+      );
+      const recallScore = runScores.find(
+        (s) => s.name === "Context Recall" && s.dataType === "NUMERIC",
+      );
+
+      if (
+        precisionScore &&
+        recallScore &&
+        precisionScore.value !== null &&
+        recallScore.value !== null
+      ) {
+        const precision = precisionScore.value as number;
+        const recall = recallScore.value as number;
+        let f1Value = 0;
+
+        if (precision + recall > 0) {
+          f1Value = (2 * (precision * recall)) / (precision + recall);
+        }
+
+        // Create a virtual Context F1 score
+        const contextF1Score = {
+          id: `context_f1_calculated_${runId}_${Date.now()}`,
+          timestamp: new Date(),
+          projectId: projectId,
+          environment: precisionScore.environment || "production",
+          traceId: precisionScore.traceId,
+          sessionId: precisionScore.sessionId,
+          observationId: precisionScore.observationId,
+          datasetRunId: runId,
+          name: "Context F1",
+          value: f1Value,
+          source: precisionScore.source,
+          comment: `Automatically calculated from Context Precision (${precision}) and Context Recall (${recall})`,
+          authorUserId: precisionScore.authorUserId,
+          configId: precisionScore.configId,
+          dataType: "NUMERIC" as const,
+          stringValue: null,
+          queueId: precisionScore.queueId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          hasMetadata: false,
+          metadata: {},
+        };
+
+        enhancedScores.push(contextF1Score);
+      }
+    }
+  }
+
+  return enhancedScores;
 };
 
 // Used in multiple places, including the public API, hence the non-default exclusion of metadata via excludeMetadata flag

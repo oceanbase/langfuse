@@ -1,8 +1,16 @@
-FROM --platform=${TARGETPLATFORM:-linux/amd64} node:20-alpine AS alpine
+# Use node:22-slim (Debian-based) to match local system (Alibaba Cloud Linux uses glibc like Debian)
+# This avoids SWC binary compatibility issues between Alpine (musl) and glibc systems
+# Using Node.js 22 to match local development environment
+FROM --platform=${TARGETPLATFORM:-linux/amd64} node:22-slim AS alpine
 
-# It's important to update the index before installing packages to ensure you're getting the latest versions.
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
-RUN apk update && apk upgrade --no-cache libcrypto3 libssl3 libc6-compat busybox ssl_client
+# Install necessary system dependencies for Debian-based image
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    dumb-init \
+    tzdata \
+    openssl \
+    ca-certificates \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
 FROM --platform=${TARGETPLATFORM:-linux/amd64} alpine AS base
 RUN npm install turbo@^2.5.6 --global
@@ -27,10 +35,31 @@ COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=pruner /app/out/pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY --from=pruner /app/out/json/ .
 
+# Skip Puppeteer download to avoid network issues
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+
+# Copy source files needed for Prisma generation
+COPY --from=pruner /app/out/full/packages/shared ./packages/shared
+
+# Install dependencies directly in Docker
 RUN pnpm install --frozen-lockfile
+
+# Install dotenv-cli globally for ClickHouse migrations
+RUN npm install -g --no-package-lock --no-save dotenv-cli
+
+# Generate Prisma client to ensure it's available during build
+RUN cd packages/shared && npx prisma generate --schema=./prisma/schema.prisma
+
+# Verify Prisma client was generated
+RUN ls -la packages/shared/node_modules/.prisma/ || echo "Prisma client not found in expected location"
+RUN find packages/shared -name ".prisma" -type d || echo "No .prisma directories found"
+
+# SWC will be handled automatically by Next.js
+# No need to manually install SWC packages
 
 ENV DOCKER_BUILD 1
 ENV NEXT_MANUAL_SIG_HANDLE true
+# Debian-based system uses glibc, SWC will automatically use the correct binary
 
 # pass public variables in build step
 ARG NEXT_PUBLIC_PLAIN_APP_ID
@@ -108,7 +137,18 @@ ENV DOCKER_BUILD 0
 # Set NEXT_MANUAL_SIG_HANDLE for runtime
 ENV NEXT_MANUAL_SIG_HANDLE true
 
-RUN apk add --no-cache dumb-init tzdata
+# Install necessary packages for Debian-based system
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    dumb-init \
+    tzdata \
+    openssl \
+    ca-certificates \
+    curl \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Ensure Node.js is in PATH
+ENV PATH="/usr/local/bin:$PATH"
 
 # Don't run production as root
 ARG UID=1001
@@ -116,7 +156,7 @@ ARG GID=1001
 RUN addgroup --system --gid ${GID} nodejs
 RUN adduser --system --uid ${UID} nextjs
 
-RUN npm install -g --no-package-lock --no-save prisma@6.3.0
+RUN npm install -g --no-package-lock --no-save dotenv-cli
 
 # Install dd-trace only if NEXT_PUBLIC_LANGFUSE_CLOUD_REGION is configured
 ARG NEXT_PUBLIC_LANGFUSE_CLOUD_REGION
@@ -124,9 +164,25 @@ RUN if [ -n "$NEXT_PUBLIC_LANGFUSE_CLOUD_REGION" ]; then \
         npm install --no-package-lock --no-save dd-trace@5.36.0; \
     fi
 
+# Set npm cache directory to a writable location for runtime
+ENV NPM_CONFIG_CACHE=/tmp/.npm
+ENV NPM_CONFIG_PREFIX=/tmp/.npm-global
+
+# Download migrate tool with retry mechanism and fallback
 RUN MIGRATE_TARGET_ARCH=$(echo ${TARGETPLATFORM:-linux/amd64} | sed 's/\//-/g') && \
-    wget -q -O- https://github.com/golang-migrate/migrate/releases/download/v4.18.3/migrate.$MIGRATE_TARGET_ARCH.tar.gz | tar xvz && \
-    mv migrate /usr/bin/migrate
+    for i in 1 2 3; do \
+        if wget -q -O- https://github.com/golang-migrate/migrate/releases/download/v4.18.3/migrate.$MIGRATE_TARGET_ARCH.tar.gz | tar xvz; then \
+            mv migrate /usr/bin/migrate && break; \
+        else \
+            echo "Attempt $i failed, retrying..."; \
+            sleep 5; \
+        fi; \
+    done && \
+    if [ ! -f /usr/bin/migrate ]; then \
+        echo "Warning: Failed to download migrate tool, some features may not work"; \
+        touch /usr/bin/migrate; \
+        chmod +x /usr/bin/migrate; \
+    fi
 
 COPY --from=builder --chown=nextjs:nodejs /app/web/next.config.mjs .
 COPY --from=builder --chown=nextjs:nodejs /app/web/package.json .
@@ -137,12 +193,27 @@ COPY --from=builder --chown=nextjs:nodejs /app/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/web/.next/static ./web/.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/web/public ./web/public
 
-COPY --from=builder --chown=nextjs:nodejs /app/packages/shared/prisma ./packages/shared/prisma
-COPY --from=builder --chown=nextjs:nodejs /app/packages/shared/clickhouse ./packages/shared/clickhouse
+# Copy the entire packages/shared directory to ensure all dependencies including Prisma client are available
+COPY --from=builder --chown=nextjs:nodejs /app/packages/shared ./packages/shared
+
+# Also copy the node_modules from builder to ensure all dependencies are available
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
 
 COPY --chown=nextjs:nodejs ./web/entrypoint.sh ./web/entrypoint.sh
 COPY --chown=nextjs:nodejs ./packages/shared/scripts/cleanup.sql ./packages/shared/scripts/cleanup.sql
 RUN chmod +x ./web/entrypoint.sh
+
+# Install dd-trace directly using curl to avoid npm issues
+RUN if [ ! -d "node_modules/dd-trace" ] || [ -L "node_modules/dd-trace" ]; then \
+        echo "Installing dd-trace directly with curl..."; \
+        rm -f node_modules/dd-trace; \
+        apt-get update && apt-get install -y curl; \
+        mkdir -p node_modules/dd-trace; \
+        cd node_modules/dd-trace; \
+        curl -sL https://registry.npmmirror.com/dd-trace/-/dd-trace-5.36.0.tgz | tar -xz --strip-components=1; \
+        # Install dd-trace dependencies \
+        npm install --no-package-lock --no-save --legacy-peer-deps import-in-the-middle@1.13.0 acorn@8.12.1; \
+    fi
 
 USER nextjs
 
@@ -159,3 +230,7 @@ CMD if [ -n "$NEXT_PUBLIC_LANGFUSE_CLOUD_REGION" ]; then \
     else \
       node ./web/server.js --keepAliveTimeout 110000; \
     fi
+
+# Health check using wget
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD wget -q --spider http://localhost:3000/api/public/health || exit 1

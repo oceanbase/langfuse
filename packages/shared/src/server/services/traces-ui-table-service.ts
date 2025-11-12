@@ -152,6 +152,8 @@ export type TracesTableMetricsClickhouseReturnType = {
   usage_details: Record<string, number>;
   cost_details: Record<string, number>;
   scores_avg: Array<{ name: string; avg_value: number }>;
+  score_categories: Array<string>;
+
   error_count: number | null;
   warning_count: number | null;
   default_count: number | null;
@@ -375,6 +377,7 @@ async function getTracesTableGeneric(props: FetchTracesTableProps) {
             o.observation_count as observation_count,
             s.scores_avg as scores_avg,
             s.score_categories as score_categories,
+
             t.public as public`;
           break;
         case "rows":
@@ -511,6 +514,7 @@ async function getTracesTableGeneric(props: FetchTracesTableProps) {
             anyLast(o.observation_count) as observation_count,
             anyLast(s.scores_avg) as scores_avg,
             anyLast(s.score_categories) as score_categories,
+
             argMaxMerge(t.public) as public`;
           break;
         case "rows":

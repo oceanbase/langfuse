@@ -4,46 +4,59 @@ import {
   type ValueProposition,
 } from "@/src/components/ui/splash-screen";
 import { Bot, Gauge, Zap, BarChart4 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface EvaluatorsOnboardingProps {
   projectId: string;
 }
 
 export function EvaluatorsOnboarding({ projectId }: EvaluatorsOnboardingProps) {
+  const { t } = useTranslation();
+
   const valuePropositions: ValueProposition[] = [
     {
-      title: "Automate evaluations",
-      description:
-        "Use LLM-as-a-judge to automatically evaluate your traces without manual review",
+      title: t(
+        "evaluation.eval.pages.valuePropositions.automateEvaluations.title",
+      ),
+      description: t(
+        "evaluation.eval.pages.valuePropositions.automateEvaluations.description",
+      ),
       icon: <Bot className="h-4 w-4" />,
     },
     {
-      title: "Measure quality",
-      description:
-        "Create custom evaluation criteria to measure the quality of your LLM outputs",
+      title: t("evaluation.eval.pages.valuePropositions.measureQuality.title"),
+      description: t(
+        "evaluation.eval.pages.valuePropositions.measureQuality.description",
+      ),
       icon: <Gauge className="h-4 w-4" />,
     },
     {
-      title: "Scale efficiently",
-      description:
-        "Evaluate thousands of traces automatically with customizable sampling rates",
+      title: t(
+        "evaluation.eval.pages.valuePropositions.scaleEfficiently.title",
+      ),
+      description: t(
+        "evaluation.eval.pages.valuePropositions.scaleEfficiently.description",
+      ),
       icon: <Zap className="h-4 w-4" />,
     },
     {
-      title: "Track performance",
-      description:
-        "Monitor evaluation metrics over time to identify trends and improvements",
+      title: t(
+        "evaluation.eval.pages.valuePropositions.trackPerformance.title",
+      ),
+      description: t(
+        "evaluation.eval.pages.valuePropositions.trackPerformance.description",
+      ),
       icon: <BarChart4 className="h-4 w-4" />,
     },
   ];
 
   return (
     <SplashScreen
-      title="Get Started with LLM-as-a-Judge Evaluations"
-      description="Create evaluation templates and evaluators to automatically score your traces with LLM-as-a-judge. Set up custom evaluation criteria and let AI help you measure the quality of your outputs."
+      title={t("evaluation.eval.pages.getStartedTitle")}
+      description={t("evaluation.eval.pages.getStartedDescription")}
       valuePropositions={valuePropositions}
       primaryAction={{
-        label: "Create Evaluator",
+        label: t("evaluation.eval.pages.createEvaluator"),
         href: `/project/${projectId}/evals/new`,
       }}
       secondaryAction={{

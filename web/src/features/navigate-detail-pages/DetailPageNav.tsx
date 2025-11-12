@@ -13,12 +13,14 @@ import { usePostHogClientCapture } from "@/src/features/posthog-analytics/usePos
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 export const DetailPageNav = (props: {
   currentId: string;
   path: (entry: ListEntry) => string;
   listKey: string;
 }) => {
+  const { t } = useTranslation();
   const { detailPagelists } = useDetailPageLists();
   const entries = detailPagelists[props.listKey] ?? [];
 
@@ -94,7 +96,7 @@ export const DetailPageNav = (props: {
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <span>Navigate up</span>
+            <span>{t("common.select.navigateUp")}</span>
             <InputCommandShortcut className="ml-2 rounded-sm bg-muted p-1 px-2">
               k
             </InputCommandShortcut>
@@ -127,7 +129,7 @@ export const DetailPageNav = (props: {
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <span>Navigate down</span>
+            <span>{t("common.select.navigateDown")}</span>
             <InputCommandShortcut className="ml-2 rounded-sm bg-muted p-1 px-2">
               j
             </InputCommandShortcut>

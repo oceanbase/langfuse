@@ -1,8 +1,10 @@
 import { useQueryProject } from "@/src/features/projects/hooks";
 import { useRouter } from "next/router";
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 export default function ProjectBillingRedirect() {
+  const { t } = useTranslation();
   const router = useRouter();
 
   const { organization } = useQueryProject();
@@ -13,5 +15,5 @@ export default function ProjectBillingRedirect() {
     }
   }, [organization, router]);
 
-  return "Redirecting...";
+  return t("common.status.redirecting");
 }

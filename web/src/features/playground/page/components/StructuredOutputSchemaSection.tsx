@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 import { usePlaygroundContext } from "@/src/features/playground/page/context";
 import { Button } from "@/src/components/ui/button";
@@ -21,6 +22,7 @@ import { type PlaygroundSchema } from "@/src/features/playground/page/types";
 
 // Popover content component for use in CollapsibleSection action buttons
 export const StructuredOutputSchemaPopover = () => {
+  const { t } = useTranslation();
   const { structuredOutputSchema, setStructuredOutputSchema } =
     usePlaygroundContext();
   const projectId = useProjectIdFromURL();
@@ -93,11 +95,11 @@ export const StructuredOutputSchemaPopover = () => {
   return (
     <Command className="flex flex-col">
       <CommandInput
-        placeholder="Search schemas..."
+        placeholder={t("playground.page.searchSchemas")}
         className="h-8 border-none p-1 focus:ring-0 focus:ring-offset-0"
       />
       <CommandList className="max-h-[300px] overflow-y-auto">
-        <CommandEmpty>No schemas found.</CommandEmpty>
+        <CommandEmpty>{t("playground.page.noSchemasFound")}</CommandEmpty>
         <CommandGroup>
           {savedSchemas.map((schema) => (
             <CommandItem
@@ -142,7 +144,7 @@ export const StructuredOutputSchemaPopover = () => {
         >
           <Button variant="outline" size="default" className="w-full">
             <PlusIcon className="mr-2 h-4 w-4" />
-            Create new schema
+            {t("playground.page.createNewSchema")}
           </Button>
         </CreateOrEditLLMSchemaDialog>
       </div>
@@ -152,6 +154,7 @@ export const StructuredOutputSchemaPopover = () => {
 
 // Main component for embedding in CollapsibleSection content
 export const StructuredOutputSchemaSection = () => {
+  const { t } = useTranslation();
   const { structuredOutputSchema, setStructuredOutputSchema } =
     usePlaygroundContext();
   const projectId = useProjectIdFromURL();
@@ -241,7 +244,9 @@ export const StructuredOutputSchemaSection = () => {
     <ScrollArea className="h-full">
       {!structuredOutputSchema ? (
         <div className="flex h-16 flex-col items-center justify-center p-4 text-center">
-          <p className="text-xs text-muted-foreground">No schema provided.</p>
+          <p className="text-xs text-muted-foreground">
+            {t("playground.structuredOutput.noSchemaProvided")}
+          </p>
         </div>
       ) : (
         <div className="space-y-1">
@@ -276,7 +281,7 @@ export const StructuredOutputSchemaSection = () => {
                   </h3>
                   {!isSchemaSaved(structuredOutputSchema) ? (
                     <span className="rounded bg-muted px-1 py-0.5 text-xs text-muted-foreground">
-                      Unsaved
+                      {t("common.status.unsaved")}
                     </span>
                   ) : null}
                 </div>

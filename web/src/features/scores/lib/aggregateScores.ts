@@ -48,7 +48,7 @@ export const aggregateScores = <T extends ScoreToAggregate>(
    * Some ScoreAggregates have a single value, and then include extra fields: comment, id, hasMetadata.
    * When the aggregate contains multiple values, these extra fields are undefined.
    */
-  return Object.entries(groupedScores).reduce((acc, [key, scores]) => {
+  const result = Object.entries(groupedScores).reduce((acc, [key, scores]) => {
     if (scores[0].dataType === "NUMERIC") {
       const values = scores.map((score) => score.value ?? 0);
       if (!Boolean(values.length)) return acc;
@@ -85,4 +85,6 @@ export const aggregateScores = <T extends ScoreToAggregate>(
     }
     return acc;
   }, {} as ScoreAggregate);
+
+  return result;
 };

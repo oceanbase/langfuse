@@ -20,6 +20,7 @@ import { useState } from "react";
 import { cn } from "@/src/utils/tailwind";
 import { showSuccessToast } from "@/src/features/notifications/showSuccessToast";
 import { api } from "@/src/utils/api";
+import { useTranslation } from "react-i18next";
 
 export const PeekViewEvaluatorConfigDetail = ({
   projectId,
@@ -28,6 +29,7 @@ export const PeekViewEvaluatorConfigDetail = ({
   projectId: string;
   row?: EvaluatorDataRow;
 }) => {
+  const { t } = useTranslation();
   const { peekId } = usePeekState();
   const [isEditMode, setIsEditMode] = useState(false);
   const utils = api.useUtils();
@@ -47,7 +49,9 @@ export const PeekViewEvaluatorConfigDetail = ({
     <div className="grid h-full flex-1 grid-rows-[auto,auto,1fr] gap-2 overflow-hidden p-3 contain-layout">
       <div className="flex items-center justify-between">
         <div className="flex flex-row items-center gap-2">
-          <span className="max-h-fit text-lg font-medium">Configuration</span>
+          <span className="max-h-fit text-lg font-medium">
+            {t("evaluation.eval.pages.configuration")}
+          </span>
           <div className="flex items-center gap-2">
             <StatusBadge
               type={evalConfig.finalStatus.toLowerCase()}
@@ -64,7 +68,7 @@ export const PeekViewEvaluatorConfigDetail = ({
           <span
             className={cn("text-sm", isEditMode ? "" : "text-muted-foreground")}
           >
-            Edit Mode
+            {t("evaluation.eval.pages.editMode")}
           </span>
           <Switch
             disabled={
@@ -78,7 +82,9 @@ export const PeekViewEvaluatorConfigDetail = ({
         </div>
       </div>
       <CardDescription className="flex items-center text-sm">
-        <span className="mr-2 text-sm font-medium">Referenced Evaluator</span>
+        <span className="mr-2 text-sm font-medium">
+          {t("evaluation.eval.pages.referencedEvaluator")}
+        </span>
         {row?.template && (
           <TableLink
             path={`/project/${projectId}/evals/templates/${row?.template.id}`}
@@ -122,7 +128,7 @@ export const PeekViewEvaluatorConfigDetail = ({
             setIsEditMode(false);
             utils.evals.invalidate();
             showSuccessToast({
-              title: "Running Evaluator updated",
+              title: t("evaluation.eval.pages.runningEvaluator") + " updated",
               description: "The evaluator configuration has been updated.",
             });
           }}

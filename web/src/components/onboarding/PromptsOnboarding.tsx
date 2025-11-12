@@ -4,46 +4,44 @@ import {
   type ValueProposition,
 } from "@/src/components/ui/splash-screen";
 import { FileText, GitBranch, Zap, BarChart4 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export function PromptsOnboarding({ projectId }: { projectId: string }) {
+  const { t } = useTranslation();
   const valuePropositions: ValueProposition[] = [
     {
-      title: "Decoupled from code",
-      description:
-        "Deploy new prompts without application redeployment, making updates faster and easier",
+      title: t("prompt.features.decoupledFromCode.title"),
+      description: t("prompt.features.decoupledFromCode.description"),
       icon: <FileText className="h-4 w-4" />,
     },
     {
-      title: "Edit in UI or programmatically",
-      description:
-        "Non-technical users can easily edit prompts in the UI. Developers can optionally update prompts programmatically via the API and SDKs",
+      title: t("prompt.features.editInUIOrProgrammatically.title"),
+      description: t("prompt.features.editInUIOrProgrammatically.description"),
       icon: <GitBranch className="h-4 w-4" />,
     },
     {
-      title: "Performance optimized",
-      description:
-        "Client-side caching prevents latency or availability issues for your applications",
+      title: t("prompt.features.performanceOptimized.title"),
+      description: t("prompt.features.performanceOptimized.description"),
       icon: <Zap className="h-4 w-4" />,
     },
     {
-      title: "Compare metrics",
-      description:
-        "Track latency, cost, and evaluation metrics across different prompt versions",
+      title: t("prompt.features.compareMetrics.title"),
+      description: t("prompt.features.compareMetrics.description"),
       icon: <BarChart4 className="h-4 w-4" />,
     },
   ];
 
   return (
     <SplashScreen
-      title="Get Started with Prompt Management"
-      description="Langfuse Prompt Management helps you centrally manage, version control, and collaboratively iterate on your prompts. Start using prompt management to improve your LLM application's performance and maintainability."
+      title={t("prompt.onboarding.getStartedTitle")}
+      description={t("prompt.onboarding.getStartedDescription")}
       valuePropositions={valuePropositions}
       primaryAction={{
-        label: "Create Prompt",
+        label: t("prompt.onboarding.createPrompt"),
         href: `/project/${projectId}/prompts/new`,
       }}
       secondaryAction={{
-        label: "Learn More",
+        label: t("prompt.onboarding.learnMore"),
         href: "https://langfuse.com/docs/prompt-management/get-started",
       }}
     />

@@ -18,6 +18,7 @@ import { z } from "zod/v4";
 import { type AnnotateDrawerProps } from "@/src/features/scores/types";
 import { type ScoreTarget } from "@/src/features/scores/types";
 import { formatAnnotateDescription } from "@/src/features/scores/lib/helpers";
+import { useTranslation } from "react-i18next";
 
 const mutationKeySchema = z.array(z.array(z.string()));
 
@@ -36,6 +37,7 @@ export function AnnotateDrawer<Target extends ScoreTarget>({
   hasGroupedButton = false,
   environment,
 }: AnnotateDrawerProps<Target>) {
+  const { t } = useTranslation();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [showSaving, setShowSaving] = useState(false);
   const capture = usePostHogClientCapture();
@@ -115,7 +117,7 @@ export function AnnotateDrawer<Target extends ScoreTarget>({
             ) : (
               <SquarePen className="mr-1.5 h-4 w-4" />
             )}
-            <span>Annotate</span>
+            <span>{t("annotationQueue.annotate.title")}</span>
           </Button>
         ) : (
           <Button
@@ -131,7 +133,7 @@ export function AnnotateDrawer<Target extends ScoreTarget>({
               );
             }}
           >
-            Annotate
+            {t("annotationQueue.annotate.title")}
           </Button>
         )}
       </DrawerTrigger>
@@ -140,7 +142,7 @@ export function AnnotateDrawer<Target extends ScoreTarget>({
           <DrawerHeader className="sticky top-0 z-10 rounded-sm bg-background">
             <DrawerTitle>
               <Header
-                title="Annotate"
+                title={t("annotationQueue.annotate.title")}
                 help={{
                   description,
                   href: "https://langfuse.com/docs/evaluation/evaluation-methods/annotation",

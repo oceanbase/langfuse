@@ -47,6 +47,7 @@ import {
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { UserAssignmentSection } from "@/src/features/annotation-queues/components/UserAssignmentSection";
 import { showErrorToast } from "@/src/features/notifications/showErrorToast";
+import { useTranslation } from "react-i18next";
 
 export const CreateOrEditAnnotationQueueButton = ({
   projectId,
@@ -59,6 +60,7 @@ export const CreateOrEditAnnotationQueueButton = ({
   variant?: ButtonProps["variant"];
   size?: ButtonProps["size"];
 }) => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const hasQueueAccess = useHasProjectAccess({
@@ -230,7 +232,9 @@ export const CreateOrEditAnnotationQueueButton = ({
           size={size}
         >
           <span className="ml-1 text-sm font-normal">
-            {queueId ? "Edit" : "New queue"}
+            {queueId
+              ? t("annotationQueue.actions.edit")
+              : t("annotationQueue.actions.newQueue")}
           </span>
         </ActionButton>
       </DialogTrigger>
@@ -238,11 +242,14 @@ export const CreateOrEditAnnotationQueueButton = ({
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {queueId ? "Edit" : "New"} annotation queue
+              {queueId
+                ? t("annotationQueue.dialog.editAnnotationQueue")
+                : t("annotationQueue.dialog.newAnnotationQueue")}
             </DialogTitle>
             <DialogDescription>
-              {queueId ? "Edit" : "Create a new"} queue to manage your
-              annotation workflows.
+              {queueId
+                ? t("annotationQueue.dialog.editDescription")
+                : t("annotationQueue.dialog.newDescription")}
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
@@ -253,7 +260,7 @@ export const CreateOrEditAnnotationQueueButton = ({
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Name</FormLabel>
+                      <FormLabel>{t("annotationQueue.dialog.name")}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
@@ -273,11 +280,15 @@ export const CreateOrEditAnnotationQueueButton = ({
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Description (optional)</FormLabel>
+                      <FormLabel>
+                        {t("annotationQueue.dialog.description")}
+                      </FormLabel>
                       <FormControl>
                         <Textarea
                           {...field}
-                          placeholder="Add description..."
+                          placeholder={t(
+                            "annotationQueue.dialog.descriptionPlaceholder",
+                          )}
                           className="text-xs focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 active:ring-0"
                         />
                       </FormControl>
@@ -290,14 +301,16 @@ export const CreateOrEditAnnotationQueueButton = ({
                   name="scoreConfigIds"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Score Configs</FormLabel>
+                      <FormLabel>
+                        {t("annotationQueue.dialog.scoreConfigs")}
+                      </FormLabel>
                       <FormDescription>
-                        Define which dimensions annotators should score for the
-                        given queue.
+                        {t("annotationQueue.dialog.scoreConfigsDescription")}
                       </FormDescription>
                       <FormControl>
                         <MultiSelectKeyValues
-                          placeholder="Value"
+                          title={t("annotationQueue.dialog.select")}
+                          placeholder={t("annotationQueue.dialog.value")}
                           align="end"
                           variant="outline"
                           className="grid grid-cols-[auto,1fr,auto,auto] gap-2"
@@ -332,7 +345,7 @@ export const CreateOrEditAnnotationQueueButton = ({
                                 );
                               }}
                             >
-                              Manage score configs
+                              {t("annotationQueue.dialog.manageScoreConfigs")}
                             </DropdownMenuItem>
                           }
                         />
@@ -348,7 +361,9 @@ export const CreateOrEditAnnotationQueueButton = ({
                   name="newAssignmentUserIds"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Advanced Settings</FormLabel>
+                      <FormLabel>
+                        {t("annotationQueue.dialog.advancedSettings")}
+                      </FormLabel>
                       <div className="mt-1 rounded-md border">
                         <Collapsible
                           open={isAdvancedOpen && hasQueueAssignmentsReadAccess}
@@ -373,7 +388,7 @@ export const CreateOrEditAnnotationQueueButton = ({
                                   <ChevronRight className="h-4 w-4 text-muted-foreground" />
                                 )}
                                 <span className="text-sm font-medium">
-                                  User Assignment
+                                  {t("annotationQueue.dialog.userAssignment")}
                                 </span>
                               </div>
                             </Button>
@@ -413,8 +428,10 @@ export const CreateOrEditAnnotationQueueButton = ({
                   {createQueueMutation.isPending ||
                   editQueueMutation.isPending ||
                   createQueueAssignmentsMutation.isPending
-                    ? "Processing..."
-                    : `${queueId ? "Save" : "Create"} queue`}
+                    ? t("annotationQueue.dialog.processing")
+                    : queueId
+                      ? t("annotationQueue.dialog.saveQueue")
+                      : t("annotationQueue.dialog.createQueue")}
                 </Button>
               </DialogFooter>
             </form>

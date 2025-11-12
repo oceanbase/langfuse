@@ -6,6 +6,7 @@ import { MultiSelectCombobox } from "@/src/components/ui/multi-select-combobox";
 import { useUserSearch } from "@/src/features/annotation-queues/hooks/useUserSearch";
 import { useSelectedUsers } from "@/src/features/annotation-queues/hooks/useSelectedUsers";
 import { showSuccessToast } from "@/src/features/notifications/showSuccessToast";
+import { useTranslation } from "react-i18next";
 
 interface UserAssignmentSectionProps {
   projectId: string;
@@ -20,6 +21,7 @@ export const UserAssignmentSection = ({
   onChange,
   queueId,
 }: UserAssignmentSectionProps) => {
+  const { t } = useTranslation();
   const hasQueueAssignmentsReadAccess = useHasProjectAccess({
     projectId: projectId,
     scope: "annotationQueueAssignments:read",
@@ -43,8 +45,8 @@ export const UserAssignmentSection = ({
         utils.annotationQueueAssignments.invalidate();
         utils.annotationQueues.invalidate();
         showSuccessToast({
-          title: "Removed assignment",
-          description: "User removed from queue successfully",
+          title: t("annotationQueue.userAssignment.removedAssignment"),
+          description: t("annotationQueue.userAssignment.userRemovedFromQueue"),
         });
       },
     });
@@ -97,7 +99,7 @@ export const UserAssignmentSection = ({
         searchResults={userSearch.searchResults}
         isLoading={userSearch.isLoading}
         disabled={!hasQueueAssignmentWriteAccess}
-        placeholder="Search users to add..."
+        placeholder={t("annotationQueue.userAssignment.searchUsersToAdd")}
         hasMoreResults={userSearch.hasMoreResults}
         getItemKey={(user) => user.id}
         renderSelectedItem={(user, onRemove) => (
@@ -121,7 +123,7 @@ export const UserAssignmentSection = ({
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-3">
                 <p className="truncate text-xs font-medium">
-                  {user.name || "Unnamed User"}
+                  {user.name || t("annotationQueue.userAssignment.unnamedUser")}
                 </p>
                 <p className="truncate text-xs text-muted-foreground">
                   {user.email}
@@ -140,7 +142,8 @@ export const UserAssignmentSection = ({
         queueAssignmentsQuery.data?.totalCount > 0 && (
           <div className="space-y-2">
             <h4 className="text-sm text-muted-foreground">
-              Assigned to ({queueAssignmentsQuery.data?.totalCount})
+              {t("annotationQueue.userAssignment.assignedTo")} (
+              {queueAssignmentsQuery.data?.totalCount})
             </h4>
             <div className="max-h-32 overflow-y-auto rounded-md border bg-background">
               {queueAssignmentsQuery.data?.assignments.map(
@@ -150,7 +153,8 @@ export const UserAssignmentSection = ({
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-3">
                           <p className="truncate text-xs font-medium">
-                            {user.name || "Unnamed User"}
+                            {user.name ||
+                              t("annotationQueue.userAssignment.unnamedUser")}
                           </p>
                           <p className="truncate text-xs text-muted-foreground">
                             {user.email}
@@ -184,7 +188,7 @@ export const UserAssignmentSection = ({
                     <p className="text-xs italic">
                       {queueAssignmentsQuery.data.totalCount -
                         queueAssignmentsQuery.data.assignments.length}{" "}
-                      more assigned users
+                      {t("annotationQueue.userAssignment.moreAssignedUsers")}
                     </p>
                   </div>
                 </div>

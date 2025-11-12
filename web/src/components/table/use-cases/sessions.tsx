@@ -2,6 +2,7 @@ import { StarSessionToggle } from "@/src/components/star-toggle";
 import { DataTable } from "@/src/components/table/data-table";
 import { DataTableToolbar } from "@/src/components/table/data-table-toolbar";
 import TableLink from "@/src/components/table/table-link";
+import { useTranslation } from "react-i18next";
 import { type LangfuseColumnDef } from "@/src/components/table/types";
 import { TokenUsageBadge } from "@/src/components/token-usage-badge";
 import useColumnVisibility from "@/src/features/column-visibility/hooks/useColumnVisibility";
@@ -80,6 +81,7 @@ export default function SessionsTable({
   userId,
   omittedFilter = [],
 }: SessionTableProps) {
+  const { t } = useTranslation();
   const { setDetailPageList } = useDetailPageLists();
   const { selectedOption, dateRange, setDateRangeAndOption } =
     useTableDateRange(projectId);
@@ -324,7 +326,7 @@ export default function SessionsTable({
     {
       accessorKey: "id",
       id: "id",
-      header: "ID",
+      header: t("common.table.id"),
       size: 200,
       isPinned: true,
       cell: ({ row }) => {
@@ -341,7 +343,7 @@ export default function SessionsTable({
     {
       accessorKey: "createdAt",
       id: "createdAt",
-      header: "Created At",
+      header: t("common.table.createdAt"),
       size: 150,
       enableHiding: true,
       enableSorting: true,
@@ -353,7 +355,7 @@ export default function SessionsTable({
     {
       accessorKey: "sessionDuration",
       id: "sessionDuration",
-      header: "Duration",
+      header: t("common.labels.duration"),
       size: 130,
       enableHiding: true,
       cell: ({ row }) => {
@@ -370,7 +372,7 @@ export default function SessionsTable({
     },
     {
       accessorKey: "environment",
-      header: "Environment",
+      header: t("common.labels.environment"),
       id: "environment",
       size: 150,
       enableHiding: true,
@@ -388,14 +390,14 @@ export default function SessionsTable({
       },
     },
     {
-      ...getScoreGroupColumnProps(isColumnLoading || !sessions.data),
+      ...getScoreGroupColumnProps(isColumnLoading || !sessions.data, t),
       columns: scoreColumns,
     },
     {
       accessorKey: "userIds",
       enableColumnFilter: !omittedFilter.find((f) => f === "userIds"),
       id: "userIds",
-      header: "User IDs",
+      header: t("user.table.userId"),
       size: 200,
       enableHiding: true,
       cell: ({ row }) => {
@@ -419,10 +421,10 @@ export default function SessionsTable({
     {
       accessorKey: "countTraces",
       id: "countTraces",
-      header: "Traces",
+      header: t("common.labels.traces"),
       size: 100,
       headerTooltip: {
-        description: "The number of traces in the session.",
+        description: t("common.tooltips.tracesCountDescription"),
       },
       enableHiding: true,
       enableSorting: true,
@@ -438,7 +440,7 @@ export default function SessionsTable({
     {
       accessorKey: "inputCost",
       id: "inputCost",
-      header: "Input Cost",
+      header: t("common.labels.inputCost"),
       size: 110,
       enableHiding: true,
       defaultHidden: true,
@@ -456,7 +458,7 @@ export default function SessionsTable({
     {
       accessorKey: "outputCost",
       id: "outputCost",
-      header: "Output Cost",
+      header: t("common.labels.outputCost"),
       size: 110,
       enableHiding: true,
       enableSorting: true,
@@ -474,7 +476,7 @@ export default function SessionsTable({
     {
       accessorKey: "totalCost",
       id: "totalCost",
-      header: "Total Cost",
+      header: t("user.table.totalCost"),
       size: 110,
       enableHiding: true,
       enableSorting: true,
@@ -491,7 +493,7 @@ export default function SessionsTable({
     {
       accessorKey: "inputTokens",
       id: "inputTokens",
-      header: "Input Tokens",
+      header: t("common.labels.inputTokens"),
       size: 110,
       enableHiding: true,
       defaultHidden: true,
@@ -510,7 +512,7 @@ export default function SessionsTable({
     {
       accessorKey: "outputTokens",
       id: "outputTokens",
-      header: "Output Tokens",
+      header: t("common.labels.outputTokens"),
       size: 110,
       enableHiding: true,
       defaultHidden: true,
@@ -529,7 +531,7 @@ export default function SessionsTable({
     {
       accessorKey: "totalTokens",
       id: "totalTokens",
-      header: "Total Tokens",
+      header: t("user.table.totalTokens"),
       size: 110,
       enableHiding: true,
       defaultHidden: true,
@@ -575,7 +577,7 @@ export default function SessionsTable({
     {
       accessorKey: "traceTags",
       id: "traceTags",
-      header: "Trace Tags",
+      header: t("common.labels.traceTags"),
       size: 250,
       enableHiding: true,
       defaultHidden: true,

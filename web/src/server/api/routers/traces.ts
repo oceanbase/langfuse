@@ -2,6 +2,7 @@ import { z } from "zod/v4";
 import { auditLog } from "@/src/features/audit-logs/auditLog";
 import { throwIfNoProjectAccess } from "@/src/features/rbac/utils/checkProjectAccess";
 import { aggregateScores } from "@/src/features/scores/lib/aggregateScores";
+
 import {
   createTRPCRouter,
   protectedGetTraceProcedure,
@@ -39,6 +40,7 @@ import {
   convertDateToClickhouseDateTime,
   getAgentGraphData,
   tracesTableUiColumnDefinitions,
+  upsertScore,
 } from "@langfuse/shared/src/server";
 import { TRPCError } from "@trpc/server";
 import { createBatchActionJob } from "@/src/features/table/server/createBatchActionJob";
@@ -149,12 +151,132 @@ export const traceRouter = createTRPCRouter({
         onParseError: traceException,
       });
 
-      return res.map((row) => ({
-        ...row,
-        scores: aggregateScores(
-          validatedScores.filter((s) => s.traceId === row.id),
-        ),
-      }));
+      // Process each trace and create Context F1 scores if needed
+      const processedTraces = await Promise.all(
+        res.map(async (row) => {
+          const traceScores = validatedScores.filter(
+            (s) => s.traceId === row.id,
+          );
+
+          // Check if we need to create a Context F1 score
+          const hasContextPrecisionAndRecall = (scores: any[]) => {
+            const precisionScore = scores.find(
+              (s) => s.name === "Context Precision" && s.dataType === "NUMERIC",
+            );
+            const recallScore = scores.find(
+              (s) => s.name === "Context Recall" && s.dataType === "NUMERIC",
+            );
+            return (
+              precisionScore &&
+              recallScore &&
+              typeof precisionScore.value === "number" &&
+              typeof recallScore.value === "number"
+            );
+          };
+
+          if (hasContextPrecisionAndRecall(traceScores)) {
+            try {
+              // Calculate F1 score from precision and recall
+              const precisionScore = traceScores.find(
+                (s) =>
+                  s.name === "Context Precision" && s.dataType === "NUMERIC",
+              );
+              const recallScore = traceScores.find(
+                (s) => s.name === "Context Recall" && s.dataType === "NUMERIC",
+              );
+
+              if (
+                precisionScore &&
+                recallScore &&
+                precisionScore.value !== null &&
+                recallScore.value !== null
+              ) {
+                const precision = precisionScore.value as number;
+                const recall = recallScore.value as number;
+                let f1Value = 0;
+
+                if (precision + recall > 0) {
+                  f1Value = (2 * (precision * recall)) / (precision + recall);
+                }
+
+                const contextF1Data = {
+                  f1Value,
+                  precisionValue: precision,
+                  recallValue: recall,
+                  environment: "production",
+                  source: precisionScore.source,
+                  authorUserId: precisionScore.authorUserId,
+                  timestamp: new Date(),
+                };
+                // Check if Context F1 score already exists
+                const existingF1Score = traceScores.find(
+                  (s) => s.name === "Context F1" && s.dataType === "NUMERIC",
+                );
+
+                if (!existingF1Score) {
+                  // Generate a unique ID for the Context F1 score
+                  const contextF1Id = `context_f1_${row.id}_${Date.now()}`;
+
+                  // Create the Context F1 score in the database
+                  await upsertScore({
+                    id: contextF1Id,
+                    name: "Context F1",
+                    value: contextF1Data.f1Value,
+                    string_value: null, // 使用下划线格式
+                    source: contextF1Data.source as any,
+                    data_type: "NUMERIC", // 使用下划线格式
+                    comment: `Automatically calculated from Context Precision (${contextF1Data.precisionValue}) and Context Recall (${contextF1Data.recallValue})`,
+                    trace_id: row.id, // 使用下划线格式
+                    observation_id: null, // 使用下划线格式
+                    session_id: null, // 使用下划线格式
+                    dataset_run_id: null, // 使用下划线格式
+                    project_id: ctx.session.projectId, // 使用下划线格式
+                    environment: contextF1Data.environment,
+                    author_user_id: contextF1Data.authorUserId, // 使用下划线格式
+                    metadata: {},
+                  });
+
+                  // Add the new score to the trace scores for aggregation
+                  traceScores.push({
+                    id: contextF1Id,
+                    name: "Context F1",
+                    value: contextF1Data.f1Value,
+                    stringValue: undefined, // NUMERIC类型应该是undefined
+                    source: contextF1Data.source as any,
+                    dataType: "NUMERIC",
+                    comment: `Automatically calculated from Context Precision (${contextF1Data.precisionValue}) and Context Recall (${contextF1Data.recallValue})`,
+                    traceId: row.id,
+                    observationId: null,
+                    sessionId: null,
+                    datasetRunId: null,
+                    projectId: ctx.session.projectId,
+                    environment: contextF1Data.environment,
+                    authorUserId: contextF1Data.authorUserId,
+                    metadata: {},
+                    timestamp: contextF1Data.timestamp,
+                    createdAt: contextF1Data.timestamp,
+                    updatedAt: contextF1Data.timestamp,
+                    hasMetadata: false, // 添加必需的hasMetadata属性
+                  });
+                }
+              }
+            } catch (error) {
+              logger.error("Failed to create Context F1 score", {
+                traceId: row.id,
+                error: error instanceof Error ? error.message : String(error),
+                projectId: ctx.session.projectId,
+              });
+            }
+          }
+
+          return {
+            ...row,
+            scores: aggregateScores(traceScores),
+          };
+        }),
+      );
+
+      return processedTraces;
     }),
   filterOptions: protectedProjectProcedure
     .input(

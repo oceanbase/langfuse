@@ -2,13 +2,21 @@
   "extends": "@repo/typescript-config/base.json",
   "compilerOptions": {
     "jsx": "react",
-    "moduleResolution": "NodeNext",
-    "module": "NodeNext",
+    "moduleResolution": "node",
+    "module": "commonjs",
     "lib": ["ES2021"],
     "outDir": "./dist",
     "types": ["node"],
     "target": "ES2020",
-    "rootDir": "."
+    "rootDir": ".",
+    "baseUrl": ".",
+    "paths": {
+      "*": ["../../node_modules/*", "node_modules/*"]
+    },
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true
   },
   "include": ["."],
   "exclude": ["node_modules", "dist"]

@@ -1,4 +1,5 @@
 import { Button } from "@/src/components/ui/button";
+import { useTranslation } from "react-i18next";
 import { usePlaygroundContext } from "@/src/features/playground/page/context";
 import {
   DropdownMenu,
@@ -42,6 +43,7 @@ export const Messages: React.FC<MessagesContext> = (props) => {
 };
 
 const SubmitButton = () => {
+  const { t } = useTranslation();
   const { handleSubmit, isStreaming } = usePlaygroundContext();
   const defaultStreamingEnabled =
     env.NEXT_PUBLIC_LANGFUSE_PLAYGROUND_STREAMING_ENABLED_DEFAULT === "true";
@@ -59,7 +61,7 @@ const SubmitButton = () => {
         }}
         loading={isStreaming}
       >
-        <p>Submit</p>
+        <p>{t("playground.page.submit")}</p>
       </Button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

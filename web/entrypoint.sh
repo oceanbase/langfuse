@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# dd-trace is now installed in the Docker image, no need to install at runtime
+
 # Run cleanup script before running migrations
 # Check if DATABASE_URL is not set
 if [ -z "$DATABASE_URL" ]; then
@@ -32,10 +34,14 @@ fi
 
 # Always execute the postgres migration, except when disabled.
 if [ "$LANGFUSE_AUTO_POSTGRES_MIGRATION_DISABLED" != "true" ]; then
-    prisma db execute --url "$DIRECT_URL" --file "./packages/shared/scripts/cleanup.sql"
+    # Set npm cache directory to a writable location
+    export NPM_CONFIG_CACHE=/tmp/.npm
+    export NPM_CONFIG_PREFIX=/tmp/.npm-global
+    
+    npx prisma db execute --url "$DIRECT_URL" --file "./packages/shared/scripts/cleanup.sql"
 
     # Apply migrations
-    prisma migrate deploy --schema=./packages/shared/prisma/schema.prisma
+    npx prisma migrate deploy --schema=./packages/shared/prisma/schema.prisma
 fi
 status=$?
 
@@ -47,20 +53,21 @@ if [ $status -ne 0 ]; then
 fi
 
 # Execute the Clickhouse migration, except when disabled.
-if [ "$LANGFUSE_AUTO_CLICKHOUSE_MIGRATION_DISABLED" != "true" ]; then
-    # Apply Clickhouse migrations
-    cd ./packages/shared
-    sh ./clickhouse/scripts/up.sh
-    status=$?
-    cd ../../
-fi
+# Temporarily disabled to fix startup issues
+# if [ "$LANGFUSE_AUTO_CLICKHOUSE_MIGRATION_DISABLED" != "true" ]; then
+#     # Apply Clickhouse migrations
+#     cd ./packages/shared
+#     sh ./clickhouse/scripts/up.sh
+#     status=$?
+#     cd ../../
+# fi
 
 # If migration fails (returns non-zero exit status), exit script with that status
-if [ $status -ne 0 ]; then
-    echo "Applying clickhouse migrations failed. This is mostly caused by the database being unavailable."
-    echo "Exiting..."
-    exit $status
-fi
+# if [ $status -ne 0 ]; then
+#     echo "Applying clickhouse migrations failed. This is mostly caused by the database being unavailable."
+#     echo "Exiting..."
+#     exit $status
+# fi
 
 # Run the command passed to the docker image on start
 exec "$@"

@@ -33,7 +33,10 @@ const getWinstonLogger = (
     winston.format.timestamp(),
     winston.format.align(),
     winston.format.printf((info) => {
-      const logMessage = `${info.timestamp} ${info.level} ${info.message}`;
+      // 为 info 级别的日志添加特殊标记
+      const level =
+        info.level === "info" ? "ℹ️ INFO" : info.level.toUpperCase();
+      const logMessage = `${info.timestamp} ${level} ${info.message}`;
       return info.stack ? `${logMessage}\n${info.stack}` : logMessage;
     }),
   );
