@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/src/components/ui/button";
 import { usePlaygroundContext } from "../context";
 import { ChatMessageRole, ChatMessageType } from "@langfuse/shared";
@@ -7,6 +8,7 @@ import { ToolCallCard } from "@/src/components/ChatMessages/ToolCallCard";
 import { copyTextToClipboard } from "@/src/utils/clipboard";
 
 export const GenerationOutput = () => {
+  const { t } = useTranslation();
   const [isCopied, setIsCopied] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
   const [isJson, setIsJson] = useState(false);
@@ -95,7 +97,9 @@ export const GenerationOutput = () => {
       >
         <div className="sticky top-0 z-10 bg-muted p-3">
           <div className="flex w-full items-center">
-            <p className="flex-1 text-xs font-semibold">Output</p>
+            <p className="flex-1 text-xs font-semibold">
+              {t("playground.page.output")}
+            </p>
             {copyButton}
           </div>
         </div>

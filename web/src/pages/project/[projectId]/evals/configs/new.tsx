@@ -1,5 +1,6 @@
 import { type GetServerSideProps } from "next";
 import { useRouter } from "next/router";
+import { useTranslation } from "react-i18next";
 
 // This url is deprecated, we keep this redirect page for backward compatibility
 export const getServerSideProps: GetServerSideProps = async (context) => {
@@ -19,10 +20,11 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 };
 
 export default function RedirectPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   if (router.isFallback) {
-    return <div className="p-3">Loading...</div>;
+    return <div className="p-3">{t("common.status.loading")}</div>;
   }
 
-  return <div>Redirecting...</div>;
+  return <div>{t("common.status.redirecting")}</div>;
 }

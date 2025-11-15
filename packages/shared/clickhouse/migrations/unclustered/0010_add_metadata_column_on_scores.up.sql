@@ -1,1 +1,1 @@
-ALTER TABLE scores ADD COLUMN metadata Map(LowCardinality(String), String) AFTER comment;
+ALTER TABLE scores ADD COLUMN IF NOT EXISTS metadata Map(LowCardinality(String), String) AFTER comment;

@@ -1,3 +1,67 @@
+# Langfuse on OceanBase
+
+[English](README.md) | [中文](README.cn.md)
+
+## 📖 Project Overview
+
+This is a fork of [Langfuse](https://github.com/langfuse/langfuse), which we have deeply customized and optimized for application scenarios, including:
+
+- 🚀 **Performance Optimization**: ClickHouse AMT table optimization, connection pool optimization, etc.
+- 🏢 **Enterprise Deployment**: Harbor image registry support, one-click deployment scripts
+- ⚙️ **Flexible Configuration**: Rich environment variable configuration, initialization configuration
+- 📊 **Enhanced Features**: Internationalization, open-source external evaluation system Bridge, dataset run optimization
+
+## 🚀 Quick Start
+
+### One-Click Deployment
+
+```bash
+# Clone repository
+git clone <your-repo-url>
+cd langfuse
+
+# Copy environment variable template
+cp env.template .env
+
+# Edit environment variables as needed
+vim .env
+
+# Build images
+./deploy.sh build
+
+# Full deployment (including middleware)
+./deploy.sh start full
+```
+
+After all services are started successfully, you can access the web page through `WEB_HTTP_PORT` or `WEB_HTTPS_PORT`, such as [http://localhost:3001](http://localhost:3001).
+
+## ⚙️ Configuration
+
+### Bridge Configuration
+
+The Bridge service is used to configure remote Ragflow On OceanBase application invocation and scoring (via SDK/API).
+
+#### Configure Remote Dataset Run Trigger
+
+When editing a Remote Dataset Run Trigger in Langfuse, you need to configure the following information:
+
+- **Webhook URL**: `http://<Bridge-service-host>:9002/webhook/dataset/process-items`
+  - Replace `<Bridge-service-host>` with the actual Bridge service host address
+
+- **Default Configuration**: Refer to the [BRIDGE-PAYLOAD.md](./BRIDGE-PAYLOAD.md) document for complete payload configuration instructions
+
+### Build Images
+
+```bash
+# Build all images
+./deploy.sh build
+
+# Or use Docker Compose
+docker compose -f docker-compose.build.yml build
+```
+
+---
+
 ![Langfuse GitHub Banner](https://langfuse.com/images/docs/github-readme/github-banner.png)
 
 <div align="center">
@@ -222,6 +286,78 @@ _[Public example trace in Langfuse](https://cloud.langfuse.com/project/cloramnkj
 > [!TIP]
 >
 > [Learn more](https://langfuse.com/docs/tracing) about tracing in Langfuse or play with the [interactive demo](https://langfuse.com/docs/demo).
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+1. **Data Migration Issues**
+   - If data migration is not completed normally or tables are missing, you can manually execute the migration. It is recommended to manually execute it to ensure data migration completes successfully:
+
+   ```bash
+   sudo docker exec langfuse-langfuse-web-1 sh -c "cd /app/packages/shared && CLICKHOUSE_CLUSTER_ENABLED=false node clickhouse/scripts/migrate.js up unclustered"
+   ```
+
+2. **Unstable Traces List Display**
+   - AMT capability is enabled, but some base table data has not been synchronized to AMT data tables.
+   - Execute the synchronization script. First, check ClickHouse connection information, then execute synchronization:
+
+   ```bash
+   # Query trace count in base table
+   docker exec langfuse-clickhouse-1 clickhouse-client --query "SELECT count(*) as traces_count FROM traces FINAL WHERE project_id = 'cmheghiek000aqlqznqlq17c7' AND is_deleted = 0" 2>/dev/null || echo "Need to check ClickHouse connection"
+
+   # Query trace count in AMT table
+   docker exec langfuse-clickhouse-1 clickhouse-client --query "SELECT count(*) as amt_count FROM traces_all_amt WHERE project_id = 'cmheghiek000aqlqznqlq17c7'" 2>/dev/null || echo "Need to check ClickHouse connection"
+   ```
+
+   - If the base table and AMT table record counts are inconsistent, execute the synchronization script:
+
+   ```bash
+   docker exec -i langfuse-clickhouse-1 clickhouse-client << 'EOF'
+   -- Synchronize data for specified project to traces_null table
+   INSERT INTO traces_null
+   SELECT
+      project_id,
+      id,
+      timestamp as start_time,
+      null as end_time,
+      name,
+      metadata,
+      user_id,
+      session_id,
+      environment,
+      tags,
+      version,
+      release,
+      bookmarked,
+      public,
+      [] as observation_ids,
+      [] as score_ids,
+      map() as cost_details,
+      map() as usage_details,
+      coalesce(input, '') as input,
+      coalesce(output, '') as output,
+      created_at,
+      updated_at,
+      event_ts
+   FROM traces FINAL
+   WHERE is_deleted = 0
+   AND project_id = 'cmheghiek000aqlqznqlq17c7'
+   ;
+   EOF
+   ```
+
+   - Verify synchronization results:
+
+   ```bash
+   docker exec langfuse-clickhouse-1 clickhouse-client --query "SELECT count(*) as amt_count FROM traces_all_amt WHERE project_id = 'cmheghiek000aqlqznqlq17c7'"
+
+   docker exec langfuse-clickhouse-1 clickhouse-client --query "SELECT count(*) as amt_7d_count FROM traces_7d_amt WHERE project_id = 'cmheghiek000aqlqznqlq17c7'"
+
+   docker exec langfuse-clickhouse-1 clickhouse-client --query "SELECT count(*) as amt_30d_count FROM traces_30d_amt WHERE project_id = 'cmheghiek000aqlqznqlq17c7'"
+   ```
+
+   If the data counts in all three tables are consistent, the data synchronization is correct.
 
 ## ⭐️ Star Us
 

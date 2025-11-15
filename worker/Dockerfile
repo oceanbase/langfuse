@@ -1,9 +1,16 @@
-FROM --platform=${TARGETPLATFORM:-linux/amd64} node:20-alpine AS alpine
+# Use node:22-slim (Debian-based) to match local system and avoid Alpine network issues
+# This avoids SWC binary compatibility issues between Alpine (musl) and glibc systems
+# Using Node.js 22 to match local development environment
+FROM --platform=${TARGETPLATFORM:-linux/amd64} node:22-slim AS alpine
 
-# It's important to update the index before installing packages to ensure you're getting the latest versions.
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
-RUN apk update && apk upgrade --no-cache libcrypto3 libssl3 libc6-compat busybox ssl_client
-
+# Install necessary system dependencies for Debian-based image
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    dumb-init \
+    tzdata \
+    openssl \
+    ca-certificates \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
 FROM --platform=${TARGETPLATFORM:-linux/amd64} alpine AS base
 RUN npm install turbo@^2.5.6 --global
@@ -31,6 +38,13 @@ COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=pruner /app/out/pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY --from=pruner /app/out/json/ .
 
+# Skip Puppeteer download to avoid network issues
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+
+# Configure npm registry for better network performance
+RUN pnpm config set registry https://registry.npmmirror.com
+
+# Install dependencies directly in Docker
 RUN pnpm install --frozen-lockfile
 
 # pass public variables in build step
@@ -50,8 +64,6 @@ FROM --platform=${TARGETPLATFORM:-linux/amd64} base AS runner
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
 
-RUN apk add --no-cache dumb-init
-
 WORKDIR /app
 
 ARG NEXT_PUBLIC_BUILD_ID
@@ -59,6 +71,12 @@ ENV BUILD_ID=$NEXT_PUBLIC_BUILD_ID
 
 ENV NODE_ENV production
 ENV DOCKER_BUILD 0
+
+# Install curl and wget for health checks
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
 
 # Don't run production as root
 ARG UID=1001
@@ -79,3 +97,7 @@ ENTRYPOINT ["dumb-init", "--", "./worker/entrypoint.sh"]
 
 # startup command
 CMD ["node", "worker/dist/index.js"]
+
+# Health check using wget
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD wget -q --spider http://localhost:3001/api/health || exit 1

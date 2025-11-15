@@ -45,6 +45,7 @@ import { numberFormatter } from "@/src/utils/numbers";
 import { formatMetricName } from "@/src/features/widgets/utils";
 import { type OrderByState } from "@langfuse/shared";
 import { Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 /**
  * Props interface for the PivotTable component
@@ -102,6 +103,7 @@ const SortableHeader: React.FC<{
   className?: string;
   rightAlign?: boolean;
 }> = ({ column, label, sortState, onSort, className, rightAlign = false }) => {
+  const { t } = useTranslation();
   const isSorted = sortState?.column === column;
   const sortDirection = isSorted ? sortState.order : null;
 
@@ -130,8 +132,8 @@ const SortableHeader: React.FC<{
             className="ml-1"
             title={
               sortDirection === "ASC"
-                ? "Sorted ascending"
-                : "Sort by this column"
+                ? t("common.sorting.sortedAscending")
+                : t("common.sorting.sortByThisColumn")
             }
           >
             {sortDirection === "ASC" ? "▲" : "▼"}
@@ -239,6 +241,7 @@ export const PivotTable: React.FC<PivotTableProps> = ({
   onSortChange,
   isLoading = false,
 }) => {
+  const { t } = useTranslation();
   // Transform chart data into pivot table structure
   const pivotTableRows = useMemo(() => {
     if (!data || data.length === 0) {
@@ -396,7 +399,7 @@ export const PivotTable: React.FC<PivotTableProps> = ({
               label={
                 config?.dimensions && config.dimensions.length > 0
                   ? config.dimensions.map(formatColumnHeader).join(" / ") // Show all dimensions
-                  : "Dimension"
+                  : t("widget.table.dimension")
               }
               className="p-2 text-left font-medium first:pl-2"
             />

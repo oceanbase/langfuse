@@ -43,7 +43,13 @@ export async function executeWithDatasetRunItemsStrategy<TInput, TOutput>({
   // eslint-disable-next-line no-unused-vars
   clickhouseExecution: (input: TInput) => Promise<TOutput>;
 }): Promise<TOutput> {
+  console.error("🔥🔥🔥 DATASET EXECUTION STRATEGY CALLED");
   const strategy = getDatasetRunItemsExecutionStrategy();
+  console.error(`📊 Dataset execution strategy:`, {
+    shouldWriteToClickHouse: strategy.shouldWriteToClickHouse,
+    shouldReadFromClickHouse: strategy.shouldReadFromClickHouse,
+    operationType,
+  });
 
   if (operationType === DatasetRunItemsOperationType.WRITE) {
     // For write operations, implement dual-write strategy

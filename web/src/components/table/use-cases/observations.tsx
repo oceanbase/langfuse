@@ -2,6 +2,7 @@ import { api } from "@/src/utils/api";
 import { DataTable } from "@/src/components/table/data-table";
 import { DataTableToolbar } from "@/src/components/table/data-table-toolbar";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { TokenUsageBadge } from "@/src/components/token-usage-badge";
 import { NumberParam, useQueryParams, withDefault } from "use-query-params";
 import { useQueryFilterState } from "@/src/features/filters/hooks/useFilterState";
@@ -120,6 +121,7 @@ export default function ObservationsTable({
   modelId,
   omittedFilter = [],
 }: ObservationsTableProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const { viewId } = router.query;
 
@@ -388,7 +390,7 @@ export default function ObservationsTable({
     {
       accessorKey: "startTime",
       id: "startTime",
-      header: "Start Time",
+      header: t("common.labels.startTime"),
       size: 150,
       enableHiding: true,
       enableSorting: true,
@@ -400,7 +402,7 @@ export default function ObservationsTable({
     {
       accessorKey: "type",
       id: "type",
-      header: "Type",
+      header: t("common.labels.type"),
       size: 50,
       enableSorting: true,
       cell: ({ row }) => {
@@ -415,7 +417,7 @@ export default function ObservationsTable({
     {
       accessorKey: "name",
       id: "name",
-      header: "Name",
+      header: t("common.labels.name"),
       size: 150,
       enableSorting: true,
       cell: ({ row }) => {
@@ -429,7 +431,7 @@ export default function ObservationsTable({
     },
     {
       accessorKey: "input",
-      header: "Input",
+      header: t("common.labels.input"),
       id: "input",
       size: 300,
       cell: ({ row }) => {
@@ -451,7 +453,7 @@ export default function ObservationsTable({
     {
       accessorKey: "output",
       id: "output",
-      header: "Output",
+      header: t("common.labels.output"),
       size: 300,
       cell: ({ row }) => {
         const observationId: string = row.getValue("id");
@@ -472,7 +474,7 @@ export default function ObservationsTable({
     {
       accessorKey: "level",
       id: "level",
-      header: "Level",
+      header: t("common.labels.level"),
       size: 100,
       headerTooltip: {
         description:
@@ -498,7 +500,7 @@ export default function ObservationsTable({
     },
     {
       accessorKey: "statusMessage",
-      header: "Status Message",
+      header: t("common.labels.statusMessage"),
       id: "statusMessage",
       size: 150,
       headerTooltip: {
@@ -525,7 +527,7 @@ export default function ObservationsTable({
     },
     {
       accessorKey: "totalCost",
-      header: "Total Cost",
+      header: t("user.table.totalCost"),
       id: "totalCost",
       size: 120,
       cell: ({ row }) => {
@@ -546,7 +548,7 @@ export default function ObservationsTable({
     {
       accessorKey: "timeToFirstToken",
       id: "timeToFirstToken",
-      header: "Time to First Token",
+      header: t("common.labels.timeToFirstToken"),
       size: 150,
       enableHiding: true,
       enableSorting: true,
@@ -653,7 +655,7 @@ export default function ObservationsTable({
     },
     {
       accessorKey: "environment",
-      header: "Environment",
+      header: t("common.labels.environment"),
       id: "environment",
       size: 150,
       enableHiding: true,
@@ -673,7 +675,7 @@ export default function ObservationsTable({
     {
       accessorKey: "traceTags",
       id: "traceTags",
-      header: "Trace Tags",
+      header: t("common.labels.traceTags"),
       size: 250,
       enableHiding: true,
       cell: ({ row }) => {
@@ -694,7 +696,7 @@ export default function ObservationsTable({
     },
     {
       accessorKey: "metadata",
-      header: "Metadata",
+      header: t("common.labels.metadata"),
       size: 300,
       headerTooltip: {
         description: "Add metadata to traces to track additional information.",
@@ -716,11 +718,11 @@ export default function ObservationsTable({
       },
       enableHiding: true,
     },
-    { ...getScoreGroupColumnProps(isColumnLoading), columns: scoreColumns },
+    { ...getScoreGroupColumnProps(isColumnLoading, t), columns: scoreColumns },
     {
       accessorKey: "endTime",
       id: "endTime",
-      header: "End Time",
+      header: t("common.labels.endTime"),
       size: 150,
       enableHiding: true,
       enableSorting: true,
@@ -733,7 +735,7 @@ export default function ObservationsTable({
     {
       accessorKey: "id",
       id: "id",
-      header: "ObservationID",
+      header: t("common.labels.observationId"),
       size: 100,
       defaultHidden: true,
       enableSorting: true,
@@ -750,7 +752,7 @@ export default function ObservationsTable({
     {
       accessorKey: "traceName",
       id: "traceName",
-      header: "Trace Name",
+      header: t("tracing.trace.tableHeaders.traceName"),
       size: 150,
       enableHiding: true,
       enableSorting: true,
@@ -759,7 +761,7 @@ export default function ObservationsTable({
     {
       accessorKey: "traceId",
       id: "traceId",
-      header: "Trace ID",
+      header: t("common.labels.traceId"),
       size: 100,
       cell: ({ row }) => {
         const value = row.getValue("traceId");
@@ -774,7 +776,7 @@ export default function ObservationsTable({
     {
       accessorKey: "modelId",
       id: "modelId",
-      header: "Model ID",
+      header: t("common.labels.modelId"),
       size: 100,
       enableHiding: true,
       defaultHidden: true,
@@ -832,7 +834,7 @@ export default function ObservationsTable({
         {
           accessorKey: "inputTokens",
           id: "inputTokens",
-          header: "Input Tokens",
+          header: t("tracing.trace.tableHeaders.inputTokens"),
           size: 100,
           enableHiding: true,
           defaultHidden: true,
@@ -849,7 +851,7 @@ export default function ObservationsTable({
         {
           accessorKey: "outputTokens",
           id: "outputTokens",
-          header: "Output Tokens",
+          header: t("tracing.trace.tableHeaders.outputTokens"),
           size: 100,
           enableHiding: true,
           defaultHidden: true,
@@ -866,7 +868,7 @@ export default function ObservationsTable({
         {
           accessorKey: "totalTokens",
           id: "totalTokens",
-          header: "Total Tokens",
+          header: t("user.table.totalTokens"),
           size: 100,
           enableHiding: true,
           defaultHidden: true,
@@ -897,7 +899,7 @@ export default function ObservationsTable({
         {
           accessorKey: "inputCost",
           id: "inputCost",
-          header: "Input Cost",
+          header: t("tracing.trace.tableHeaders.inputCost"),
           size: 120,
           cell: ({ row }: { row: Row<ObservationsTableRow> }) => {
             const value: number | undefined = row.getValue("inputCost");
@@ -913,7 +915,7 @@ export default function ObservationsTable({
         {
           accessorKey: "outputCost",
           id: "outputCost",
-          header: "Output Cost",
+          header: t("tracing.trace.tableHeaders.outputCost"),
           size: 120,
           cell: ({ row }: { row: Row<ObservationsTableRow> }) => {
             const value: number | undefined = row.getValue("outputCost");

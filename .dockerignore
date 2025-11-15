@@ -1,8 +1,19 @@
 Dockerfile
 .dockerignore
-node_modules
 npm-debug.log
 README.md
 **/.next
 .git
+# Exclude node_modules to force Docker to install dependencies
+node_modules
 **/node_modules
+# Exclude build artifacts
+**/dist
+**/build
+**/.turbo
+# Exclude development files
+.env.local
+.env.development
+**/*.log
+**/coverage
+**/.nyc_output

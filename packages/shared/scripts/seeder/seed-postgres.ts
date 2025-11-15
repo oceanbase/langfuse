@@ -393,6 +393,63 @@ async function main() {
 
 main()
   .then(async () => {
+    // 在 PostgreSQL 种子完成后，添加 ClickHouse 种子数据
+    try {
+      // 首先检查 ClickHouse 表是否存在
+      const { createClient } = await import("@clickhouse/client");
+      const client = createClient({
+        url: process.env.CLICKHOUSE_URL || "http://localhost:8123",
+        username: process.env.CLICKHOUSE_USER || "clickhouse",
+        password: process.env.CLICKHOUSE_PASSWORD || "clickhouse",
+      });
+
+      // 检查 traces 表是否存在
+      try {
+        await client.query({
+          query: "SELECT 1 FROM traces LIMIT 1",
+        });
+        await client.close();
+      } catch (error) {
+        logger.warn(
+          "ClickHouse traces table not ready, skipping ClickHouse seed data",
+        );
+        await client.close();
+        return;
+      }
+
+      // 动态导入 prepare-clickhouse，处理可能的模块解析问题
+      let prepareClickhouse;
+      try {
+        const module = await import("./prepare-clickhouse.js");
+        prepareClickhouse = module.prepareClickhouse;
+      } catch (error) {
+        // 如果导入失败，尝试不带扩展名的导入
+        try {
+          const module = await import("./prepare-clickhouse.js");
+          prepareClickhouse = module.prepareClickhouse;
+        } catch (secondError) {
+          logger.error("Failed to import prepare-clickhouse module:", error);
+          return;
+        }
+      }
+      const projectIds = ["7a88fb47-b4e2-43b8-a06c-a5ce950dc53a"];
+      if (
+        await prisma.project.findFirst({
+          where: { id: "239ad00f-562f-411d-af14-831c75ddd875" },
+        })
+      ) {
+        projectIds.push("239ad00f-562f-411d-af14-831c75ddd875");
+      }
+      await prepareClickhouse(projectIds, {
+        numberOfDays: 3,
+        totalObservations: 1000,
+        numberOfRuns: 3,
+      });
+      logger.info("ClickHouse seed data added successfully");
+    } catch (error) {
+      logger.error("Failed to add ClickHouse seed data:", error);
+    }
+
     await prisma.$disconnect();
     redis?.disconnect();
     logger.info("Disconnected from postgres and redis");

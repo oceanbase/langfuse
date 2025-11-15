@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "@/src/utils/api";
 import { DataTable } from "@/src/components/table/data-table";
 import { DataTableToolbar } from "@/src/components/table/data-table-toolbar";
@@ -30,6 +31,7 @@ interface AutomationExecutionsTableProps {
 export const AutomationExecutionsTable: React.FC<
   AutomationExecutionsTableProps
 > = ({ projectId, automationId }) => {
+  const { t } = useTranslation();
   const [paginationState, setPaginationState] = useQueryParams({
     pageIndex: withDefault(NumberParam, 0),
     pageSize: withDefault(NumberParam, 50),
@@ -92,7 +94,7 @@ export const AutomationExecutionsTable: React.FC<
     },
     {
       accessorKey: "input",
-      header: "Input",
+      header: t("common.labels.input"),
       id: "input",
       cell: ({ row }) => {
         const value = row.getValue("input");
@@ -101,7 +103,7 @@ export const AutomationExecutionsTable: React.FC<
     },
     {
       accessorKey: "output",
-      header: "Output",
+      header: t("common.labels.output"),
       id: "output",
       cell: ({ row }) => {
         const value = row.getValue("output");

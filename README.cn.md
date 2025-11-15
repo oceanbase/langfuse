@@ -1,3 +1,67 @@
+# Langfuse on OceanBase
+
+[English](README.md) | [中文](README.cn.md)
+
+## 📖 项目概述
+
+这是 [Langfuse](https://github.com/langfuse/langfuse) 的一个分支版本，我们针对应用场景进行了深度定制和优化，包括：
+
+- 🚀 **性能优化**：ClickHouse AMT 表优化、连接池优化等
+- 🏢 **企业级部署**：Harbor 镜像仓库支持、一键部署脚本
+- ⚙️ **灵活配置**：丰富的环境变量配置、初始化配置
+- 📊 **增强功能**：国际化、开源外部评估系统 Bridge、数据集运行优化
+
+## 🚀 快速开始
+
+### 一键部署
+
+```bash
+# 克隆仓库
+git clone <your-repo-url>
+cd langfuse
+
+# 复制环境变量模板
+cp env.template .env
+
+# 根据需要编辑环境变量
+vim .env
+
+# 构建镜像
+./deploy.sh build
+
+# 完整部署（包括中间件）
+./deploy.sh start full
+```
+
+所有服务成功启动后，您可以通过 `WEB_HTTP_PORT` 或 `WEB_HTTPS_PORT` 访问网页，例如 [http://localhost:3001](http://localhost:3001)。
+
+## ⚙️ 配置
+
+### Bridge 配置
+
+Bridge 服务用于配置远程 Ragflow On OceanBase 应用程序调用和评分（通过 SDK/API）。
+
+#### 配置远程数据集运行触发器
+
+在 Langfuse 中编辑远程数据集运行触发器时，您需要配置以下信息：
+
+- **Webhook URL**：`http://<Bridge-service-host>:9002/webhook/dataset/process-items`
+  - 将 `<Bridge-service-host>` 替换为实际的 Bridge 服务主机地址
+
+- **默认配置**：请参考 [BRIDGE-PAYLOAD.md](./BRIDGE-PAYLOAD.md) 文档获取完整的负载配置说明
+
+### 构建镜像
+
+```bash
+# 构建所有镜像
+./deploy.sh build
+
+# 或使用 Docker Compose
+docker compose -f docker-compose.build.yml build
+```
+
+---
+
 ![Langfuse GitHub Banner](https://langfuse.com/images/docs/github-readme/github-banner.png)
 
 <div align="center">
@@ -121,7 +185,7 @@ Langfuse 是一个 **开源 LLM 工程** 平台。它帮助团队协作 **开发
 
 - [本地（docker compose）](https://langfuse.com/self-hosting/local)：使用 Docker Compose 在你的机器上于 5 分钟内运行 Langfuse。
 
-  ```bash:README.md/docker-compose
+  ```bash
   # 获取最新的 Langfuse 仓库副本
   git clone https://github.com/langfuse/langfuse.git
   cd langfuse
@@ -130,9 +194,8 @@ Langfuse 是一个 **开源 LLM 工程** 平台。它帮助团队协作 **开发
   docker compose up
   ```
 
-- [Kubernetes（Helm）](https://langfuse.com/self-hosting/kubernetes-helm)：使用 Helm 在 Kubernetes 集群上部署 Langfuse。这是推荐的生产环境部署方式。
-
 - [虚拟机](https://langfuse.com/self-hosting/docker-compose)：使用 Docker Compose 在单台虚拟机上部署 Langfuse。
+- [Kubernetes（Helm）](https://langfuse.com/self-hosting/kubernetes-helm)：使用 Helm 在 Kubernetes 集群上部署 Langfuse。这是推荐的生产环境部署方式。
 
 - Terraform 模板: [AWS](https://langfuse.com/self-hosting/aws)、[Azure](https://langfuse.com/self-hosting/azure)、[GCP](https://langfuse.com/self-hosting/gcp)
 
@@ -243,9 +306,81 @@ _[Langfuse 中的公共示例追踪](https://cloud.langfuse.com/project/cloramnk
 >
 > [了解更多](https://langfuse.com/docs/tracing) 关于 Langfuse 中的追踪，或试试 [互动演示](https://langfuse.com/docs/demo)。
 
+## 🐛 故障排除
+
+### 常见问题
+
+1. **数据迁移问题**
+   - 如果数据迁移未正常完成或表缺失，您可以手动执行迁移。建议手动执行以确保数据迁移成功完成：
+
+   ```bash
+   sudo docker exec langfuse-langfuse-web-1 sh -c "cd /app/packages/shared && CLICKHOUSE_CLUSTER_ENABLED=false node clickhouse/scripts/migrate.js up unclustered"
+   ```
+
+2. **追踪列表显示不稳定**
+   - AMT 功能已启用，但部分基础表数据尚未同步到 AMT 数据表。
+   - 执行同步脚本。首先，检查 ClickHouse 连接信息，然后执行同步：
+
+   ```bash
+   # 查询基础表中的追踪数量
+   docker exec langfuse-clickhouse-1 clickhouse-client --query "SELECT count(*) as traces_count FROM traces FINAL WHERE project_id = 'cmheghiek000aqlqznqlq17c7' AND is_deleted = 0" 2>/dev/null || echo "需要检查 ClickHouse 连接"
+
+   # 查询 AMT 表中的追踪数量
+   docker exec langfuse-clickhouse-1 clickhouse-client --query "SELECT count(*) as amt_count FROM traces_all_amt WHERE project_id = 'cmheghiek000aqlqznqlq17c7'" 2>/dev/null || echo "需要检查 ClickHouse 连接"
+   ```
+
+   - 如果基础表和 AMT 表的记录数不一致，执行同步脚本：
+
+   ```bash
+   docker exec -i langfuse-clickhouse-1 clickhouse-client << 'EOF'
+   -- 将指定项目的数据同步到 traces_null 表
+   INSERT INTO traces_null
+   SELECT
+      project_id,
+      id,
+      timestamp as start_time,
+      null as end_time,
+      name,
+      metadata,
+      user_id,
+      session_id,
+      environment,
+      tags,
+      version,
+      release,
+      bookmarked,
+      public,
+      [] as observation_ids,
+      [] as score_ids,
+      map() as cost_details,
+      map() as usage_details,
+      coalesce(input, '') as input,
+      coalesce(output, '') as output,
+      created_at,
+      updated_at,
+      event_ts
+   FROM traces FINAL
+   WHERE is_deleted = 0
+   AND project_id = 'cmheghiek000aqlqznqlq17c7'
+   ;
+   EOF
+   ```
+
+   - 验证同步结果：
+
+   ```bash
+   docker exec langfuse-clickhouse-1 clickhouse-client --query "SELECT count(*) as amt_count FROM traces_all_amt WHERE project_id = 'cmheghiek000aqlqznqlq17c7'"
+
+   docker exec langfuse-clickhouse-1 clickhouse-client --query "SELECT count(*) as amt_7d_count FROM traces_7d_amt WHERE project_id = 'cmheghiek000aqlqznqlq17c7'"
+
+   docker exec langfuse-clickhouse-1 clickhouse-client --query "SELECT count(*) as amt_30d_count FROM traces_30d_amt WHERE project_id = 'cmheghiek000aqlqznqlq17c7'"
+   ```
+
+   如果三个表中的数据计数一致，则数据同步正确。
+
 ## ⭐️ 给我们加星
 
-![为 Langfuse 加星](https://langfuse.com/images/docs/github-readme/github-star-howto.gif)
+![star-langfuse-on-github](https://github.com/user-attachments/assets/79a1d816-d229-4526-aecc-097d4a19f1ad)
 
 ## 💭 支持
 
@@ -253,7 +388,7 @@ _[Langfuse 中的公共示例追踪](https://cloud.langfuse.com/project/cloramnk
 
 - 我们的 [文档](https://langfuse.com/docs) 是查找答案的最佳起点。内容全面，我们投入大量时间进行维护。你也可以通过 GitHub 提出文档修改建议。
 - [Langfuse 常见问题](https://langfuse.com/faq) 解答了最常见的问题。
-- 使用 "Ask AI" 立即获取问题答案。
+- 使用 "[Ask AI](https://langfuse.com/docs/ask-ai)" 立即获取问题答案。
 
 支持渠道：
 
@@ -351,7 +486,3 @@ _[Langfuse 中的公共示例追踪](https://cloud.langfuse.com/project/cloramnk
 所有数据均不会与第三方共享，也不包含任何敏感信息。我们对这一过程保持高度透明，你可以在 [此处](/web/src/features/telemetry/index.ts) 查看我们收集的具体数据。
 
 你可以通过设置 `TELEMETRY_ENABLED=false` 来选择退出。
-
-```
-
-```

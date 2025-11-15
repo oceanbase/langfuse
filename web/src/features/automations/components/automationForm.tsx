@@ -43,6 +43,7 @@ import { useHasProjectAccess } from "@/src/features/rbac/utils/checkProjectAcces
 import { showSuccessToast } from "@/src/features/notifications/showSuccessToast";
 import { showErrorToast } from "@/src/features/notifications/showErrorToast";
 import { ActionHandlerRegistry } from "./actions";
+import { useTranslation } from "react-i18next";
 import { webhookSchema } from "./actions/WebhookActionForm";
 import { MultiSelect } from "@/src/features/filters/components/multi-select";
 
@@ -97,6 +98,7 @@ export const AutomationForm = ({
   automation,
   isEditing = false,
 }: AutomationFormProps) => {
+  const { t } = useTranslation();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<string>("webhook");
   const hasAccess = useHasProjectAccess({
@@ -204,8 +206,8 @@ export const AutomationForm = ({
   const onSubmit = async (data: FormValues) => {
     if (!hasAccess) {
       showErrorToast(
-        "Permission Denied",
-        "You don't have permission to modify automations.",
+        t("automation.form.permissionDenied"),
+        t("automation.form.permissionDeniedDescription"),
       );
       return;
     }
@@ -216,8 +218,9 @@ export const AutomationForm = ({
 
     if (!validation.isValid) {
       showErrorToast(
-        "Validation Error",
-        validation.errors?.join(", ") || "Please fill in all required fields",
+        t("automation.form.validationError"),
+        validation.errors?.join(", ") ||
+          t("automation.form.validationErrorDescription"),
       );
       return;
     }
@@ -239,8 +242,10 @@ export const AutomationForm = ({
       });
 
       showSuccessToast({
-        title: "Automation Updated",
-        description: `Successfully updated automation "${data.name}".`,
+        title: t("automation.form.automationUpdated"),
+        description: t("automation.form.automationUpdatedDescription", {
+          name: data.name,
+        }),
       });
 
       onSuccess?.(automation.id);
@@ -258,8 +263,10 @@ export const AutomationForm = ({
       });
 
       showSuccessToast({
-        title: "Automation Created",
-        description: `Successfully created automation "${data.name}".`,
+        title: t("automation.form.automationCreated"),
+        description: t("automation.form.automationCreatedDescription", {
+          name: data.name,
+        }),
       });
 
       onSuccess?.(result.automation.id, result.webhookSecret);
@@ -268,7 +275,9 @@ export const AutomationForm = ({
 
   // Update button text based on if we're editing an existing automation
   const submitButtonText =
-    isEditing && automation ? "Update Automation" : "Save Automation";
+    isEditing && automation
+      ? t("automation.form.updateAutomation")
+      : t("automation.form.saveAutomation");
 
   // Update required fields based on action type
   const handleActionTypeChange = (value: ActionTypes) => {
@@ -409,8 +418,8 @@ export const AutomationForm = ({
                   <FormLabel>Event Action</FormLabel>
                   <FormControl>
                     <MultiSelect
-                      title="Event Actions"
-                      label="Actions"
+                      title={t("automation.formLabels.eventActions")}
+                      label={t("automation.formLabels.actions")}
                       values={field.value}
                       onValueChange={field.onChange}
                       options={[
@@ -499,10 +508,10 @@ export const AutomationForm = ({
                         (actionType) => (
                           <SelectItem key={actionType} value={actionType}>
                             {actionType === "WEBHOOK"
-                              ? "Webhook"
+                              ? t("automation.types.webhook")
                               : actionType === "SLACK"
-                                ? "Slack"
-                                : "Annotation Queue"}
+                                ? t("automation.types.slack")
+                                : t("automation.types.annotationQueue")}
                           </SelectItem>
                         ),
                       )}

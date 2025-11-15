@@ -70,7 +70,7 @@ async function testLLMConnection(
     const testMessages: ChatMessage[] = [
       {
         role: ChatMessageRole.User,
-        content: "How are you?",
+        content: "Hello",
         type: ChatMessageType.User,
       },
     ];

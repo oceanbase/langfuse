@@ -36,6 +36,7 @@ import {
   InputCommandItem,
   InputCommandList,
 } from "@/src/components/ui/input-command";
+import { useTranslation } from "react-i18next";
 
 // Has WipFilterState, passes all valid filters to parent onChange
 export function PopoverFilterBuilder({
@@ -51,6 +52,7 @@ export function PopoverFilterBuilder({
     | ((newState: FilterState) => void);
   columnsWithCustomSelect?: string[];
 }) {
+  const { t } = useTranslation();
   const capture = usePostHogClientCapture();
   const [wipFilterState, _setWipFilterState] =
     useState<WipFilterState>(filterState);
@@ -105,7 +107,7 @@ export function PopoverFilterBuilder({
       >
         <PopoverTrigger asChild>
           <Button variant="outline" type="button">
-            <span>Filters</span>
+            <span>{t("dashboard.filters.filters")}</span>
             {filterState.length > 0 && filterState.length < 3 ? (
               <InlineFilterState
                 filterState={filterState}
@@ -255,6 +257,7 @@ function FilterBuilderForm({
   disabled?: boolean;
   columnsWithCustomSelect?: string[];
 }) {
+  const { t } = useTranslation();
   const handleFilterChange = (filter: WipFilterCondition, i: number) => {
     onChange((prev) => {
       const newState = [...prev];
@@ -294,7 +297,11 @@ function FilterBuilderForm({
             );
             return (
               <tr key={i}>
-                <td className="p-1 text-sm">{i === 0 ? "Where" : "And"}</td>
+                <td className="p-1 text-sm">
+                  {i === 0
+                    ? t("common.filters.where")
+                    : t("common.filters.and")}
+                </td>
                 <td className="flex gap-2 p-1">
                   {/* selector of the column to be filtered */}
                   <Popover>
@@ -307,7 +314,7 @@ function FilterBuilderForm({
                         className="flex w-full min-w-32 items-center justify-between gap-2"
                       >
                         <span className="truncate">
-                          {column ? column.name : "Column"}
+                          {column ? column.name : t("common.filters.column")}
                         </span>
                         <ChevronDown className="h-4 w-4 flex-shrink-0 opacity-50" />
                       </Button>
@@ -323,12 +330,12 @@ function FilterBuilderForm({
                     >
                       <InputCommand>
                         <InputCommandInput
-                          placeholder="Search for column"
+                          placeholder={t("common.filters.searchForColumn")}
                           onFocus={(e) => (e.target.style.border = "none")}
                         />
                         <InputCommandList>
                           <InputCommandEmpty>
-                            No options found.
+                            {t("common.select.noResultsFound")}
                           </InputCommandEmpty>
                           <InputCommandGroup>
                             {columns.map((option) => (
@@ -608,7 +615,7 @@ function FilterBuilderForm({
           size="sm"
         >
           <Plus className="mr-2 h-4 w-4" />
-          Add filter
+          {t("common.filters.addFilter")}
         </Button>
       ) : null}
     </>

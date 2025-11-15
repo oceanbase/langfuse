@@ -16,6 +16,7 @@ import { ChevronDown, ExternalLink } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 
 export const CreateNewAnnotationQueueItem = ({
   projectId,
@@ -28,6 +29,7 @@ export const CreateNewAnnotationQueueItem = ({
   objectType: AnnotationQueueObjectType;
   variant?: "outline" | "secondary";
 }) => {
+  const { t } = useTranslation();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const session = useSession();
   const hasAccess = useHasProjectAccess({
@@ -133,7 +135,9 @@ export const CreateNewAnnotationQueueItem = ({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuLabel>In queue(s)</DropdownMenuLabel>
+        <DropdownMenuLabel>
+          {t("annotationQueue.queueItem.inQueues")}
+        </DropdownMenuLabel>
         {queues.data?.queues.length ? (
           queues.data?.queues.map((queue) => (
             <DropdownMenuCheckboxItem

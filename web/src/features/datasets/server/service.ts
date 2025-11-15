@@ -18,13 +18,14 @@ import {
   convertToScore,
   getLatencyAndTotalCostForObservations,
   getLatencyAndTotalCostForObservationsByTraces,
+  queryClickhouse,
   getScoresForDatasetRuns,
   getScoresForTraces,
   logger,
-  queryClickhouse,
   type ScoreRecordReadType,
   tableColumnsToSqlFilterAndPrefix,
   traceException,
+  upsertScore,
 } from "@langfuse/shared/src/server";
 import { aggregateScores } from "@/src/features/scores/lib/aggregateScores";
 import Decimal from "decimal.js";
@@ -547,10 +548,54 @@ export const fetchDatasetItems = async (input: DatasetRunItemsTableInput) => {
   };
 };
 
+// Temporary debug function to check database directly
+const debugCheckScoresInDatabase = async (
+  projectId: string,
+  traceIds: string[],
+) => {
+  try {
+    // Use the existing getScoresForTraces function instead of direct query
+    const scores = await getScoresForTraces({
+      projectId,
+      traceIds,
+      includeHasMetadata: true,
+      excludeMetadata: true,
+    });
+
+    const contextScores = scores.filter(
+      (s) =>
+        s.name === "Context Precision" ||
+        s.name === "Context Recall" ||
+        s.name === "Context F1",
+    );
+
+    console.log(
+      `💾💾💾 Database query results for ${traceIds.length} traces:`,
+      contextScores.map((s) => ({
+        traceId: s.traceId,
+        name: s.name,
+        value: s.value,
+        dataType: s.dataType,
+      })),
+    );
+    return contextScores;
+  } catch (error) {
+    console.error("Failed to query database for scores:", error);
+    return [];
+  }
+};
+
 export const getRunItemsByRunIdOrItemId = async (
   projectId: string,
   runItems: DatasetRunItems[],
 ) => {
+  console.log(
+    `🚀🚀🚀 Processing ${runItems.length} run items for project ${projectId}`,
+  );
+
+  // Debug: Check database directly
+  const traceIds = runItems.map((ri) => ri.traceId);
+  await debugCheckScoresInDatabase(projectId, traceIds);
   const minTimestamp = runItems
     .map((ri) => ri.createdAt)
     .sort((a, b) => a.getTime() - b.getTime())
@@ -588,7 +633,185 @@ export const getRunItemsByRunIdOrItemId = async (
     onParseError: traceException,
   });
 
-  return runItems.map((ri) => {
+  console.log(
+    `Found ${validatedTraceScores.length} validated trace scores for ${runItems.length} run items`,
+  );
+
+  // Process each run item and create Context F1 scores if needed
+  const processedRunItems = await Promise.all(
+    runItems.map(async (ri) => {
+      const traceScores = validatedTraceScores.filter(
+        (s) => s.traceId === ri.traceId,
+      );
+
+      // Debug: log all scores for this trace
+      if (traceScores.length > 0) {
+        console.log(
+          `Trace ${ri.traceId} has ${traceScores.length} scores:`,
+          traceScores.map((s) => `${s.name}: ${s.value}`).join(", "),
+        );
+      }
+
+      // Check if we need to create a Context F1 score
+      const hasContextPrecisionAndRecall = (scores: any[]) => {
+        const precisionScore = scores.find(
+          (s) => s.name === "Context Precision" && s.dataType === "NUMERIC",
+        );
+        const recallScore = scores.find(
+          (s) => s.name === "Context Recall" && s.dataType === "NUMERIC",
+        );
+        return (
+          precisionScore &&
+          recallScore &&
+          typeof precisionScore.value === "number" &&
+          typeof recallScore.value === "number"
+        );
+      };
+
+      if (hasContextPrecisionAndRecall(traceScores)) {
+        console.log(
+          `Found Context Precision and Recall for trace ${ri.traceId}, calculating F1...`,
+        );
+        try {
+          // Calculate F1 score from precision and recall
+          const precisionScore = traceScores.find(
+            (s) => s.name === "Context Precision" && s.dataType === "NUMERIC",
+          );
+          const recallScore = traceScores.find(
+            (s) => s.name === "Context Recall" && s.dataType === "NUMERIC",
+          );
+
+          if (
+            precisionScore &&
+            recallScore &&
+            precisionScore.value !== null &&
+            recallScore.value !== null
+          ) {
+            const precision = precisionScore.value as number;
+            const recall = recallScore.value as number;
+            let f1Value = 0;
+
+            if (precision + recall > 0) {
+              f1Value = (2 * (precision * recall)) / (precision + recall);
+            }
+
+            const contextF1Data = {
+              f1Value,
+              precisionValue: precision,
+              recallValue: recall,
+              environment: "production",
+              source: precisionScore.source,
+              authorUserId: precisionScore.authorUserId,
+              timestamp: new Date(),
+            };
+            // Check if Context F1 score already exists
+            const existingF1Score = traceScores.find(
+              (s) => s.name === "Context F1" && s.dataType === "NUMERIC",
+            );
+
+            if (!existingF1Score) {
+              // Generate a unique ID for the Context F1 score
+              const contextF1Id = `context_f1_${ri.traceId}_${Date.now()}`;
+              console.log(
+                `Creating Context F1 score with ID ${contextF1Id}, value: ${contextF1Data.f1Value}`,
+              );
+
+              // Create the Context F1 score in the database
+              try {
+                const scoreData = {
+                  id: contextF1Id,
+                  name: "Context F1",
+                  value: contextF1Data.f1Value,
+                  string_value: null,
+                  source: contextF1Data.source as any,
+                  data_type: "NUMERIC" as const,
+                  comment: `Automatically calculated from Context Precision (${contextF1Data.precisionValue}) and Context Recall (${contextF1Data.recallValue})`,
+                  trace_id: ri.traceId,
+                  observation_id: null,
+                  session_id: null,
+                  dataset_run_id: null,
+                  project_id: projectId,
+                  environment: contextF1Data.environment,
+                  author_user_id: contextF1Data.authorUserId,
+                  metadata: {},
+                  timestamp: contextF1Data.timestamp
+                    .toISOString()
+                    .replace("T", " ")
+                    .replace("Z", ""),
+                  created_at: contextF1Data.timestamp
+                    .toISOString()
+                    .replace("T", " ")
+                    .replace("Z", ""),
+                  updated_at: contextF1Data.timestamp
+                    .toISOString()
+                    .replace("T", " ")
+                    .replace("Z", ""),
+                  event_ts: contextF1Data.timestamp
+                    .toISOString()
+                    .replace("T", " ")
+                    .replace("Z", ""),
+                  is_deleted: 0,
+                };
+
+                // Log the complete score data for debugging
+                console.log(
+                  `🔍🔍🔍 F1 Score Data for trace ${ri.traceId}:`,
+                  JSON.stringify(scoreData, null, 2),
+                );
+
+                console.log(
+                  `🚀🚀🚀 About to call upsertScore for trace ${ri.traceId}`,
+                );
+
+                await upsertScore(scoreData);
+                console.log(
+                  `✅ Successfully saved Context F1 score for trace ${ri.traceId}`,
+                );
+              } catch (error) {
+                console.error(
+                  `❌ Failed to save Context F1 score for trace ${ri.traceId}:`,
+                  error,
+                );
+              }
+
+              // Add the new score to the trace scores for aggregation
+              traceScores.push({
+                id: contextF1Id,
+                name: "Context F1",
+                value: contextF1Data.f1Value,
+                stringValue: undefined,
+                source: contextF1Data.source as any,
+                dataType: "NUMERIC",
+                comment: `Automatically calculated from Context Precision (${contextF1Data.precisionValue}) and Context Recall (${contextF1Data.recallValue})`,
+                traceId: ri.traceId,
+                observationId: null,
+                sessionId: null,
+                datasetRunId: null,
+                projectId: projectId,
+                environment: contextF1Data.environment,
+                authorUserId: contextF1Data.authorUserId,
+                metadata: {},
+                timestamp: contextF1Data.timestamp,
+                createdAt: contextF1Data.timestamp,
+                updatedAt: contextF1Data.timestamp,
+                hasMetadata: false,
+              });
+            }
+          }
+        } catch (error) {
+          console.error("Failed to create Context F1 score", {
+            traceId: ri.traceId,
+            error: error instanceof Error ? error.message : String(error),
+            projectId: projectId,
+          });
+        }
+      }
+
+      return { ...ri, processedTraceScores: traceScores };
+    }),
+  );
+
+  return processedRunItems.map((ri) => {
     const trace = traceAggregate
       .map((t) => ({
         id: t.traceId,
@@ -620,9 +843,7 @@ export const getRunItemsByRunIdOrItemId = async (
           }
         : undefined);
 
-    const scores = aggregateScores([
-      ...validatedTraceScores.filter((s) => s.traceId === ri.traceId),
-    ]);
+    const scores = aggregateScores([...ri.processedTraceScores]);
 
     return {
       id: ri.id,

@@ -5,45 +5,44 @@ import {
 } from "@/src/components/ui/splash-screen";
 import { setupTracingRoute } from "@/src/features/setup/setupRoutes";
 import { BarChart4, GitMerge, Search, Zap } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface TracesOnboardingProps {
   projectId: string;
 }
 
 export function TracesOnboarding({ projectId }: TracesOnboardingProps) {
+  const { t } = useTranslation();
   const valuePropositions: ValueProposition[] = [
     {
-      title: "Full context capture",
-      description:
-        "Track the complete execution flow including API calls, context, prompts, parallelism and more",
+      title: t("tracing.features.fullContextCapture.title"),
+      description: t("tracing.features.fullContextCapture.description"),
       icon: <GitMerge className="h-4 w-4" />,
     },
     {
-      title: "Cost monitoring",
-      description: "Track model usage and costs across your application",
+      title: t("tracing.features.costMonitoring.title"),
+      description: t("tracing.features.costMonitoring.description"),
       icon: <BarChart4 className="h-4 w-4" />,
     },
     {
-      title: "Basis for evaluation",
-      description:
-        "Add evaluation scores to identify issues and track metrics over time",
+      title: t("tracing.features.basisForEvaluation.title"),
+      description: t("tracing.features.basisForEvaluation.description"),
       icon: <Search className="h-4 w-4" />,
     },
     {
-      title: "Open and Multi-modal",
-      description:
-        "Langfuse traces can include images, audio, and other modalities. You can fully customize them to fit your needs",
+      title: t("tracing.features.openAndMultimodal.title"),
+      description: t("tracing.features.openAndMultimodal.description"),
       icon: <Zap className="h-4 w-4" />,
     },
   ];
 
   return (
     <SplashScreen
-      title="Get Started with LLM Tracing"
-      description="Traces allow you to track every LLM call and other relevant logic in your app/agent. Nested traces in Langfuse help to understand what is happening and identify the root cause of problems."
+      title={t("tracing.onboarding.getStartedTitle")}
+      description={t("tracing.onboarding.getStartedDescription")}
       valuePropositions={valuePropositions}
       primaryAction={{
-        label: "Configure Tracing",
+        label: t("tracing.onboarding.configureTracing"),
         href: setupTracingRoute(projectId),
       }}
       secondaryAction={{

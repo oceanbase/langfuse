@@ -20,7 +20,7 @@ CREATE TABLE traces (
     INDEX idx_id id TYPE bloom_filter(0.001) GRANULARITY 1,
     INDEX idx_res_metadata_key mapKeys(metadata) TYPE bloom_filter(0.01) GRANULARITY 1,
     INDEX idx_res_metadata_value mapValues(metadata) TYPE bloom_filter(0.01) GRANULARITY 1
-) ENGINE = ReplacingMergeTree(event_ts, is_deleted) Partition by toYYYYMM(timestamp)
+) ENGINE = ReplacingMergeTree(event_ts) Partition by toYYYYMM(timestamp)
 PRIMARY KEY (
      project_id,
      toDate(timestamp)

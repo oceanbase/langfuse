@@ -2,6 +2,7 @@ import { DataTable } from "@/src/components/table/data-table";
 import { useRowHeightLocalStorage } from "@/src/components/table/data-table-row-height-switch";
 import { DataTableToolbar } from "@/src/components/table/data-table-toolbar";
 import TableLink from "@/src/components/table/table-link";
+import { useTranslation } from "react-i18next";
 import { type LangfuseColumnDef } from "@/src/components/table/types";
 import { IOTableCell } from "../../ui/IOTableCell";
 import { Avatar, AvatarImage } from "@/src/components/ui/avatar";
@@ -11,10 +12,8 @@ import { isNumericDataType } from "@/src/features/scores/lib/helpers";
 import { useOrderByState } from "@/src/features/orderBy/hooks/useOrderByState";
 import { useDebounce } from "@/src/hooks/useDebounce";
 import { useTableDateRange } from "@/src/hooks/useTableDateRange";
-import {
-  type ScoreOptions,
-  scoresTableColsWithOptions,
-} from "@/src/server/api/definitions/scoresTable";
+import { type ScoreOptions } from "@/src/server/api/definitions/scoresTable";
+import { getScoresTableColsWithOptions } from "@/src/components/table/definitions/scoresTableI18n";
 import { api } from "@/src/utils/api";
 
 import type { RouterOutput } from "@/src/utils/types";
@@ -105,6 +104,7 @@ export default function ScoresTable({
   hiddenColumns?: string[];
   localStorageSuffix?: string;
 }) {
+  const { t } = useTranslation();
   const utils = api.useUtils();
   const [selectedRows, setSelectedRows] = useState<RowSelectionState>({});
   const [paginationState, setPaginationState] = useQueryParams({
@@ -126,7 +126,7 @@ export default function ScoresTable({
   const dateRangeFilter: FilterState = dateRange
     ? [
         {
-          column: "Timestamp",
+          column: t("common.labels.timestamp"),
           type: "datetime",
           operator: ">=",
           value: dateRange.from,
@@ -257,7 +257,7 @@ export default function ScoresTable({
       accessorKey: "id",
       id: "id",
       enableColumnFilter: false,
-      header: "Score ID",
+      header: t("common.labels.scoreId"),
       size: 100,
       enableSorting: false,
       defaultHidden: true,
@@ -271,7 +271,7 @@ export default function ScoresTable({
     },
     {
       accessorKey: "traceName",
-      header: "Trace Name",
+      header: t("tracing.trace.tableHeaders.traceName"),
       id: "traceName",
       enableHiding: true,
       enableSorting: true,
@@ -293,7 +293,7 @@ export default function ScoresTable({
       accessorKey: "traceId",
       id: "traceId",
       enableColumnFilter: true,
-      header: "Trace",
+      header: t("common.labels.trace"),
       enableSorting: true,
       size: 100,
       cell: ({ row }) => {
@@ -311,7 +311,7 @@ export default function ScoresTable({
     {
       accessorKey: "observationId",
       id: "observationId",
-      header: "Observation",
+      header: t("common.labels.observation"),
       enableSorting: true,
       size: 100,
       cell: ({ row }) => {
@@ -329,7 +329,7 @@ export default function ScoresTable({
     },
     {
       accessorKey: "sessionId",
-      header: "Session",
+      header: t("common.labels.session"),
       id: "sessionId",
       enableHiding: true,
       enableSorting: true,
@@ -346,7 +346,7 @@ export default function ScoresTable({
     },
     {
       accessorKey: "environment",
-      header: "Environment",
+      header: t("common.labels.environment"),
       id: "environment",
       size: 150,
       enableHiding: true,
@@ -364,10 +364,10 @@ export default function ScoresTable({
     },
     {
       accessorKey: "userId",
-      header: "User",
+      header: t("common.labels.user"),
       id: "userId",
       headerTooltip: {
-        description: "The user ID associated with the trace.",
+        description: t("common.tooltips.userIdDescription"),
         href: "https://langfuse.com/docs/observability/features/users",
       },
       enableHiding: true,
@@ -387,7 +387,7 @@ export default function ScoresTable({
     },
     {
       accessorKey: "timestamp",
-      header: "Timestamp",
+      header: t("common.labels.timestamp"),
       id: "timestamp",
       enableHiding: true,
       enableSorting: true,
@@ -399,7 +399,7 @@ export default function ScoresTable({
     },
     {
       accessorKey: "source",
-      header: "Source",
+      header: t("common.labels.source"),
       id: "source",
       enableHiding: true,
       enableSorting: true,
@@ -407,7 +407,7 @@ export default function ScoresTable({
     },
     {
       accessorKey: "name",
-      header: "Name",
+      header: t("common.labels.name"),
       id: "name",
       enableHiding: true,
       enableSorting: true,
@@ -415,7 +415,7 @@ export default function ScoresTable({
     },
     {
       accessorKey: "dataType",
-      header: "Data Type",
+      header: t("common.labels.dataType"),
       id: "dataType",
       enableHiding: true,
       enableSorting: true,
@@ -423,7 +423,7 @@ export default function ScoresTable({
     },
     {
       accessorKey: "value",
-      header: "Value",
+      header: t("common.labels.value"),
       id: "value",
       enableHiding: true,
       enableSorting: true,
@@ -431,11 +431,11 @@ export default function ScoresTable({
     },
     {
       accessorKey: "metadata",
-      header: "Metadata",
+      header: t("common.labels.metadata"),
       id: "metadata",
       size: 400,
       headerTooltip: {
-        description: "Add metadata to scores to track additional information.",
+        description: t("common.tooltips.scoresMetadataDescription"),
         // TODO: docs for metadata on scores
         href: "https://langfuse.com/docs/observability/features/metadata",
       },
@@ -453,7 +453,7 @@ export default function ScoresTable({
     },
     {
       accessorKey: "comment",
-      header: "Comment",
+      header: t("common.labels.comment"),
       id: "comment",
       enableHiding: true,
       size: 400,
@@ -467,7 +467,7 @@ export default function ScoresTable({
     {
       accessorKey: "author",
       id: "author",
-      header: "Author",
+      header: t("common.labels.author"),
       enableHiding: true,
       size: 150,
       cell: ({ row }) => {
@@ -479,7 +479,7 @@ export default function ScoresTable({
             <Avatar className="h-7 w-7">
               <AvatarImage
                 src={image ?? undefined}
-                alt={name ?? "User Avatar"}
+                alt={name ?? t("common.labels.userAvatar")}
               />
             </Avatar>
             <span>{name ?? userId}</span>
@@ -489,10 +489,10 @@ export default function ScoresTable({
     },
     {
       accessorKey: "jobConfigurationId",
-      header: "Eval Configuration ID",
+      header: t("common.labels.evalConfigurationId"),
       id: "jobConfigurationId",
       headerTooltip: {
-        description: "The Job Configuration ID associated with the trace.",
+        description: t("common.tooltips.jobConfigurationIdDescription"),
         href: "https://langfuse.com/docs/evaluation/evaluation-methods/llm-as-a-judge",
       },
       enableHiding: true,
@@ -513,7 +513,7 @@ export default function ScoresTable({
     {
       accessorKey: "traceTags",
       id: "traceTags",
-      header: "Trace Tags",
+      header: t("common.labels.traceTags"),
       size: 250,
       enableHiding: true,
       defaultHidden: true,
@@ -541,9 +541,8 @@ export default function ScoresTable({
           {
             id: "score-delete",
             type: BatchActionType.Delete,
-            label: "Delete Scores",
-            description:
-              "This action permanently deletes scores and cannot be undone. Score deletion happens asynchronously and may take up to 15 minutes.",
+            label: t("common.table.deleteScores"),
+            description: t("common.descriptions.deleteScoresAction"),
             accessCheck: {
               scope: "traces:delete",
               entitlement: "trace-deletion",
@@ -604,7 +603,7 @@ export default function ScoresTable({
   const transformFilterOptions = (
     traceFilterOptions: ScoreOptions | undefined,
   ) => {
-    return scoresTableColsWithOptions(traceFilterOptions).filter(
+    return getScoresTableColsWithOptions(t, traceFilterOptions).filter(
       (c) => !omittedFilter?.includes(c.name) && !hiddenColumns.includes(c.id),
     );
   };

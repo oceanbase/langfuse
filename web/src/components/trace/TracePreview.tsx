@@ -22,6 +22,7 @@ import { useMemo, useState } from "react";
 import { usdFormatter } from "@/src/utils/numbers";
 import { calculateDisplayTotalCost } from "@/src/components/trace/lib/helpers";
 import { useIsAuthenticatedAndProjectMember } from "@/src/features/auth/hooks";
+import { useTranslation } from "react-i18next";
 import {
   TabsBar,
   TabsBarContent,
@@ -57,6 +58,7 @@ export const TracePreview = ({
   commentCounts?: Map<string, number>;
   viewType?: "detailed" | "focused";
 }) => {
+  const { t } = useTranslation();
   const [selectedTab, setSelectedTab] = useQueryParam(
     "view",
     withDefault(StringParam, "preview"),
@@ -119,7 +121,9 @@ export const TracePreview = ({
             <span className="mb-0 ml-1 line-clamp-2 min-w-0 break-all font-medium md:break-normal md:break-words">
               {trace.name}
             </span>
-            <CopyIdsPopover idItems={[{ id: trace.id, name: "Trace ID" }]} />
+            <CopyIdsPopover
+              idItems={[{ id: trace.id, name: t("tracing.trace.ids.traceId") }]}
+            />
           </div>
           <div className="mr-3 flex h-full flex-wrap content-start items-start justify-end gap-1">
             <NewDatasetItemFromExistingObject
@@ -243,9 +247,13 @@ export const TracePreview = ({
         >
           {viewType === "detailed" && (
             <TabsBarList>
-              <TabsBarTrigger value="preview">Preview</TabsBarTrigger>
+              <TabsBarTrigger value="preview">
+                {t("tracing.tabs.preview")}
+              </TabsBarTrigger>
               {showScoresTab && (
-                <TabsBarTrigger value="scores">Scores</TabsBarTrigger>
+                <TabsBarTrigger value="scores">
+                  {t("tracing.tabs.scores")}
+                </TabsBarTrigger>
               )}
               {selectedTab.includes("preview") && isPrettyViewAvailable && (
                 <Tabs
@@ -295,7 +303,7 @@ export const TracePreview = ({
               <div>
                 <PrettyJsonView
                   key={trace.id + "-metadata"}
-                  title="Metadata"
+                  title={t("tracing.trace.common.metadata")}
                   json={trace.metadata}
                   media={
                     traceMedia.data?.filter((m) => m.field === "metadata") ?? []

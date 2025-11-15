@@ -72,6 +72,7 @@ import {
 } from "@/src/features/scores/types";
 import { useScoreValues } from "@/src/features/scores/hooks/useScoreValues";
 import { useScoreMutations } from "@/src/features/scores/hooks/useScoreMutations";
+import { useTranslation } from "react-i18next";
 import { AnnotateFormSchema } from "@/src/features/scores/schema";
 
 const CHAR_CUTOFF = 6;
@@ -137,6 +138,7 @@ function AnnotateHeader({
   actionButtons: React.ReactNode;
   description: string;
 }) {
+  const { t } = useTranslation();
   return (
     <Header
       title="Annotate"
@@ -155,7 +157,9 @@ function AnnotateHeader({
             )}
           </div>
           <span className="text-xs text-muted-foreground">
-            {showSaving ? "Saving score data" : "Score data saved"}
+            {showSaving
+              ? t("annotationQueue.annotate.savingScoreData")
+              : t("annotationQueue.annotate.scoreDataSaved")}
           </span>
         </div>,
         actionButtons,
@@ -191,6 +195,7 @@ export function AnnotateDrawerContent<Target extends ScoreTarget>({
   actionButtons,
   environment,
 }: AnnotateDrawerContentProps<Target>) {
+  const { t } = useTranslation();
   const capture = usePostHogClientCapture();
   const router = useRouter();
 
@@ -576,7 +581,7 @@ export function AnnotateDrawerContent<Target extends ScoreTarget>({
         {!isSelectHidden && (
           <div className="grid grid-flow-col items-center">
             <MultiSelectKeyValues
-              placeholder="Value"
+              placeholder={t("annotationQueue.dialog.value")}
               align="end"
               items="empty scores"
               className="grid grid-cols-[auto,1fr,auto,auto] gap-2"

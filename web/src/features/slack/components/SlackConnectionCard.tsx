@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/src/components/ui/alert";
 import { api } from "@/src/utils/api";
 import { SlackConnectButton } from "@/src/features/slack/components/SlackConnectButton";
 import { SlackDisconnectButton } from "@/src/features/slack/components/SlackDisconnectButton";
+import { useTranslation } from "react-i18next";
 
 /**
  * Props for the SlackConnectionCard component
@@ -50,6 +51,7 @@ export const SlackConnectionCard: React.FC<SlackConnectionCardProps> = ({
   onConnectionChange,
   showConnectButton = true,
 }) => {
+  const { t } = useTranslation();
   // Get Slack integration status
   const {
     data: integrationStatus,
@@ -119,10 +121,10 @@ export const SlackConnectionCard: React.FC<SlackConnectionCardProps> = ({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            Slack Connection
+            {t("project.settings.integrations.slack.title")}
           </CardTitle>
           <CardDescription>
-            Connect your Slack workspace to send notifications
+            {t("project.settings.integrations.slack.description")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -135,8 +137,7 @@ export const SlackConnectionCard: React.FC<SlackConnectionCardProps> = ({
 
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">
-              Connect your Slack workspace to enable real-time notifications for
-              your automations.
+              {t("project.settings.integrations.slack.connectSlackDescription")}
             </p>
 
             {showConnectButton && (

@@ -2,6 +2,7 @@ import { StarTraceToggle } from "@/src/components/star-toggle";
 import { DataTable } from "@/src/components/table/data-table";
 import { DataTableToolbar } from "@/src/components/table/data-table-toolbar";
 import { Badge } from "@/src/components/ui/badge";
+import { useTranslation } from "react-i18next";
 import { type LangfuseColumnDef } from "@/src/components/table/types";
 import { TagTracePopover } from "@/src/features/tag/components/TagTracePopver";
 import { TokenUsageBadge } from "@/src/components/token-usage-badge";
@@ -146,6 +147,7 @@ export default function TracesTable({
   externalDateRange,
   limitRows,
 }: TracesTableProps) {
+  const { t } = useTranslation();
   const utils = api.useUtils();
   const [selectedRows, setSelectedRows] = useState<RowSelectionState>({});
   const { setDetailPageList } = useDetailPageLists();
@@ -483,7 +485,7 @@ export default function TracesTable({
         ]),
     {
       accessorKey: "timestamp",
-      header: "Timestamp",
+      header: t("common.labels.timestamp"),
       id: "timestamp",
       size: 150,
       enableHiding: true,
@@ -495,7 +497,7 @@ export default function TracesTable({
     },
     {
       accessorKey: "name",
-      header: "Name",
+      header: t("common.labels.name"),
       id: "name",
       size: 150,
       enableHiding: true,
@@ -511,7 +513,7 @@ export default function TracesTable({
     },
     {
       accessorKey: "input",
-      header: "Input",
+      header: t("common.labels.input"),
       id: "input",
       size: 400,
       cell: ({ row }) => {
@@ -532,7 +534,7 @@ export default function TracesTable({
     },
     {
       accessorKey: "output",
-      header: "Output",
+      header: t("common.labels.output"),
       id: "output",
       size: 400,
       cell: ({ row }) => {
@@ -554,7 +556,7 @@ export default function TracesTable({
     {
       accessorKey: "levelCounts",
       id: "levelCounts",
-      header: "Observation Levels",
+      header: t("tracing.trace.tableHeaders.observationLevels"),
       size: 150,
       cell: ({ row }) => {
         const value: TracesTableRow["levelCounts"] =
@@ -576,7 +578,7 @@ export default function TracesTable({
     {
       accessorKey: "latency",
       id: "latency",
-      header: "Latency",
+      header: t("common.labels.latency"),
       size: 100,
       // add seconds to the end of the latency
       cell: ({ row }) => {
@@ -592,7 +594,7 @@ export default function TracesTable({
 
     {
       accessorKey: "tokens",
-      header: "Tokens",
+      header: t("common.labels.tokens"),
       id: "tokens",
       size: 180,
       cell: ({ row }) => {
@@ -622,7 +624,7 @@ export default function TracesTable({
     {
       accessorKey: "totalCost",
       id: "totalCost",
-      header: "Total Cost",
+      header: t("user.table.totalCost"),
       size: 130,
       cell: ({ row }) => {
         const cost: TracesTableRow["totalCost"] = row.getValue("totalCost");
@@ -645,7 +647,7 @@ export default function TracesTable({
     },
     {
       accessorKey: "environment",
-      header: "Environment",
+      header: t("common.labels.environment"),
       id: "environment",
       size: 150,
       enableHiding: true,
@@ -692,7 +694,7 @@ export default function TracesTable({
     },
     {
       accessorKey: "metadata",
-      header: "Metadata",
+      header: t("common.labels.metadata"),
       size: 400,
       headerTooltip: {
         description: "Add metadata to traces to track additional information.",
@@ -718,7 +720,10 @@ export default function TracesTable({
       ? []
       : [
           {
-            ...getScoreGroupColumnProps(isColumnLoading || !traceMetrics.data),
+            ...getScoreGroupColumnProps(
+              isColumnLoading || !traceMetrics.data,
+              t,
+            ),
             columns: scoreColumns,
           },
         ]),
@@ -726,10 +731,10 @@ export default function TracesTable({
       accessorKey: "sessionId",
       enableColumnFilter: !omittedFilter.find((f) => f === "sessionId"),
       id: "sessionId",
-      header: "Session",
+      header: t("common.labels.session"),
       size: 150,
       headerTooltip: {
-        description: "Add `sessionId` to traces to track sessions.",
+        description: t("common.tooltips.addSessionIdToTraces"),
         href: "https://langfuse.com/docs/observability/features/sessions",
       },
       cell: ({ row }) => {
@@ -744,11 +749,11 @@ export default function TracesTable({
     },
     {
       accessorKey: "userId",
-      header: "User",
+      header: t("common.labels.user"),
       id: "userId",
       size: 150,
       headerTooltip: {
-        description: "Add `userId` to traces to track users.",
+        description: t("common.tooltips.addUserIdToTraces"),
         href: "https://langfuse.com/docs/observability/features/users",
       },
       cell: ({ row }) => {
@@ -764,10 +769,10 @@ export default function TracesTable({
     {
       accessorKey: "observationCount",
       id: "observationCount",
-      header: "Observations",
+      header: t("common.labels.observations"),
       size: 120,
       headerTooltip: {
-        description: "The number of observations in the trace.",
+        description: t("common.tooltips.observationsCountDescription"),
       },
       enableHiding: true,
       defaultHidden: true,
@@ -832,7 +837,7 @@ export default function TracesTable({
     },
     {
       accessorKey: "id",
-      header: "Trace ID",
+      header: t("common.labels.traceId"),
       id: "id",
       size: 90,
       cell: ({ row }) => {
@@ -861,7 +866,7 @@ export default function TracesTable({
         {
           accessorKey: "inputCost",
           id: "inputCost",
-          header: "Input Cost",
+          header: t("tracing.trace.tableHeaders.inputCost"),
           size: 100,
           cell: ({ row }: { row: Row<TracesTableRow> }) => {
             const cost: TracesTableRow["cost"] = row.getValue("cost");
@@ -883,7 +888,7 @@ export default function TracesTable({
         {
           accessorKey: "outputCost",
           id: "outputCost",
-          header: "Output Cost",
+          header: t("tracing.trace.tableHeaders.outputCost"),
           size: 100,
           cell: ({ row }: { row: Row<TracesTableRow> }) => {
             const cost: TracesTableRow["cost"] = row.getValue("cost");
@@ -919,7 +924,7 @@ export default function TracesTable({
         {
           accessorKey: "inputTokens",
           id: "inputTokens",
-          header: "Input Tokens",
+          header: t("tracing.trace.tableHeaders.inputTokens"),
           size: 110,
           cell: ({ row }: { row: Row<TracesTableRow> }) => {
             const value: TracesTableRow["usage"] = row.getValue("usage");
@@ -933,7 +938,7 @@ export default function TracesTable({
         {
           accessorKey: "outputTokens",
           id: "outputTokens",
-          header: "Output Tokens",
+          header: t("tracing.trace.tableHeaders.outputTokens"),
           size: 110,
           cell: ({ row }: { row: Row<TracesTableRow> }) => {
             const value: TracesTableRow["usage"] = row.getValue("usage");
@@ -947,7 +952,7 @@ export default function TracesTable({
         {
           accessorKey: "totalTokens",
           id: "totalTokens",
-          header: "Total Tokens",
+          header: t("user.table.totalTokens"),
           size: 110,
           cell: ({ row }: { row: Row<TracesTableRow> }) => {
             const value: TracesTableRow["usage"] = row.getValue("usage");

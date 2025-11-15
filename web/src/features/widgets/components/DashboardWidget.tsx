@@ -21,6 +21,8 @@ import { useHasProjectAccess } from "@/src/features/rbac/utils/checkProjectAcces
 import { showErrorToast } from "@/src/features/notifications/showErrorToast";
 import { DownloadButton } from "@/src/features/widgets/chart-library/DownloadButton";
 import { formatMetricName } from "@/src/features/widgets/utils";
+import { useTranslation } from "react-i18next";
+import { LangfuseIcon } from "@/src/components/LangfuseLogo";
 
 export interface WidgetPlacement {
   id: string;
@@ -49,6 +51,7 @@ export function DashboardWidget({
   onDeleteWidget: (tileId: string) => void;
   dashboardOwner: "LANGFUSE" | "PROJECT";
 }) {
+  const { t } = useTranslation();
   const router = useRouter();
   const utils = api.useUtils();
   const widget = api.dashboardWidgets.get.useQuery(
@@ -205,7 +208,7 @@ export function DashboardWidget({
       });
     },
     onError: (e) => {
-      showErrorToast("Failed to clone widget", e.message);
+      showErrorToast(t("widget.actions.cloneWidget"), e.message);
     },
   });
   const handleCopy = () => {
@@ -218,7 +221,7 @@ export function DashboardWidget({
   };
 
   const handleDelete = () => {
-    if (onDeleteWidget && confirm("Please confirm deletion")) {
+    if (onDeleteWidget && confirm(t("common.confirmations.pleaseConfirm"))) {
       onDeleteWidget(placement.id);
     }
   };
@@ -250,9 +253,13 @@ export function DashboardWidget({
       <div className="flex items-center justify-between">
         <span className="truncate font-medium" title={widget.data.name}>
           {widget.data.name}{" "}
-          {dashboardOwner === "PROJECT" && widget.data.owner === "LANGFUSE"
-            ? " ( 🪢 )"
-            : null}
+          {dashboardOwner === "PROJECT" &&
+          ["LANGFUSE"].includes(widget.data.owner) ? (
+            <span>
+              {" "}
+              ( <LangfuseIcon size={16} /> )
+            </span>
+          ) : null}
         </span>
         <div className="flex space-x-2">
           {hasCUDAccess && (
@@ -269,7 +276,7 @@ export function DashboardWidget({
                 >
                   <PencilIcon size={16} />
                 </button>
-              ) : widget.data.owner === "LANGFUSE" ? (
+              ) : ["LANGFUSE"].includes(widget.data.owner) ? (
                 <button
                   onClick={handleCopy}
                   className="hidden text-muted-foreground hover:text-foreground group-hover:block"
@@ -292,7 +299,7 @@ export function DashboardWidget({
             <div
               className="text-muted-foreground"
               aria-label="Loading chart data"
-              title="Loading..."
+              title={t("widget.actions.loading")}
             >
               <Loader2 size={16} className="animate-spin" />
             </div>

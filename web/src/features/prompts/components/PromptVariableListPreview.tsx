@@ -1,10 +1,13 @@
 import { Badge } from "@/src/components/ui/badge";
+import { useTranslation } from "react-i18next";
 
 export const PromptVariableListPreview = ({
   variables,
 }: {
   variables: string[];
 }) => {
+  const { t } = useTranslation();
+
   if (variables.length === 0) {
     return null;
   }
@@ -12,7 +15,7 @@ export const PromptVariableListPreview = ({
   return (
     <div>
       <p className="mb-2 text-sm text-muted-foreground">
-        The following variables are available:
+        {t("evaluation.eval.pages.theFollowingVariablesAreAvailable")}
       </p>
       <div className="flex min-h-6 flex-wrap gap-2">
         {variables.map((variable) => (

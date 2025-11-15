@@ -1,5 +1,6 @@
 import { type EvalTemplate } from "@langfuse/shared";
 import { AlertCircle, CheckIcon, ExternalLink } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import {
   InputCommand,
   InputCommandEmpty,
@@ -40,6 +41,7 @@ export function EvaluatorSelector({
   onTemplateSelect,
   onCreateNew,
 }: EvaluatorSelectorProps) {
+  const { t } = useTranslation();
   const [search, setSearch] = useState("");
 
   // Group templates by name and whether they are managed by Langfuse
@@ -97,7 +99,7 @@ export function EvaluatorSelector({
   return (
     <InputCommand className="flex h-full flex-col border-none">
       <InputCommandInput
-        placeholder="Search evaluators..."
+        placeholder={t("evaluation.eval.newEvaluator.searchEvaluators")}
         className="h-9 px-0"
         value={search}
         onValueChange={setSearch}
@@ -105,7 +107,9 @@ export function EvaluatorSelector({
       />
       <InputCommandList className="max-h-full flex-1 overflow-y-auto">
         {!hasResults && (
-          <InputCommandEmpty>No evaluator found.</InputCommandEmpty>
+          <InputCommandEmpty>
+            {t("evaluation.eval.newEvaluator.noEvaluatorFound")}
+          </InputCommandEmpty>
         )}
 
         {filteredTemplates.custom.length > 0 && (
@@ -139,7 +143,9 @@ export function EvaluatorSelector({
                           <AlertCircle className="ml-1 h-4 w-4 text-yellow-500" />
                         </TooltipTrigger>
                         <TooltipContent>
-                          Requires project-level evaluation model
+                          {t(
+                            "evaluation.eval.newEvaluator.requiresProjectLevelEvaluationModel",
+                          )}
                         </TooltipContent>
                       </Tooltip>
                     )}
@@ -179,7 +185,11 @@ export function EvaluatorSelector({
 
         {filteredTemplates.langfuse.length > 0 && (
           <>
-            <InputCommandGroup heading="Langfuse managed evaluators">
+            <InputCommandGroup
+              heading={t(
+                "evaluation.eval.newEvaluator.langfuseManagedEvaluators",
+              )}
+            >
               {filteredTemplates.langfuse.map(([name, templateData]) => {
                 const latestVersion = templateData[templateData.length - 1];
                 const isInvalid = isTemplateInvalid(latestVersion);
@@ -211,7 +221,9 @@ export function EvaluatorSelector({
                           <AlertCircle className="ml-1 h-4 w-4 text-yellow-500" />
                         </TooltipTrigger>
                         <TooltipContent>
-                          Requires project-level evaluation model
+                          {t(
+                            "evaluation.eval.newEvaluator.requiresProjectLevelEvaluationModel",
+                          )}
                         </TooltipContent>
                       </Tooltip>
                     )}

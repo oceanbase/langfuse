@@ -1,6 +1,7 @@
 import { capitalize } from "lodash";
 import { GripVertical, MinusCircleIcon } from "lucide-react";
 import { memo, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import {
   type ChatMessage,
   ChatMessageRole,
@@ -42,22 +43,22 @@ const ROLES: ChatMessageRole[] = [
   ChatMessageRole.Tool,
 ] as const;
 
-const getRoleNamePlaceholder = (role: string) => {
+const getRoleNamePlaceholder = (role: string, t: (key: string) => string) => {
   switch (role) {
     case ChatMessageRole.System:
-      return "a system message";
+      return t("common.messagePlaceholders.enterSystemMessageHere");
     case ChatMessageRole.Developer:
-      return "a developer message";
+      return t("common.messagePlaceholders.enterDeveloperMessageHere");
     case ChatMessageRole.Assistant:
-      return "an assistant message";
+      return t("common.messagePlaceholders.enterAssistantMessageHere");
     case ChatMessageRole.User:
-      return "a user message";
+      return t("common.messagePlaceholders.enterUserMessageHere");
     case ChatMessageRole.Tool:
-      return "a tool response message";
+      return t("common.messagePlaceholders.enterToolResponseMessageHere");
     case "placeholder":
-      return "placeholder name (e.g. msg_history)";
+      return t("common.messagePlaceholders.enterPlaceholderNameHere");
     default:
-      return `a ${role}`;
+      return `Enter a ${role} here.`;
   }
 };
 
@@ -338,8 +339,9 @@ const MemoizedEditor = memo(function MemoizedEditor(props: {
   role: ChatMessage["role"];
   onChange: (value: string) => void;
 }) {
+  const { t } = useTranslation();
   const { value, role, onChange } = props;
-  const placeholder = `Enter ${getRoleNamePlaceholder(role)} here.`;
+  const placeholder = getRoleNamePlaceholder(role, t);
 
   return (
     <CodeMirrorEditor

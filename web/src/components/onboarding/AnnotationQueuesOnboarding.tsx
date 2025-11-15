@@ -4,6 +4,7 @@ import {
   type ValueProposition,
 } from "@/src/components/ui/splash-screen";
 import { ClipboardCheck, Users, BarChart4, GitMerge } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { CreateOrEditAnnotationQueueButton } from "@/src/features/annotation-queues/components/CreateOrEditAnnotationQueueButton";
 
 export function AnnotationQueuesOnboarding({
@@ -11,40 +12,54 @@ export function AnnotationQueuesOnboarding({
 }: {
   projectId: string;
 }) {
+  const { t } = useTranslation();
+
   const valuePropositions: ValueProposition[] = [
     {
-      title: "Manage scoring workflows",
-      description:
-        "Create and manage annotation queues to streamline your scoring workflows",
+      title: t(
+        "annotationQueue.onboarding.valuePropositions.manageScoringWorkflows.title",
+      ),
+      description: t(
+        "annotationQueue.onboarding.valuePropositions.manageScoringWorkflows.description",
+      ),
       icon: <ClipboardCheck className="h-4 w-4" />,
     },
     {
-      title: "Collaborate with annotators",
-      description:
-        "Invite team members to annotate and evaluate your LLM outputs",
+      title: t(
+        "annotationQueue.onboarding.valuePropositions.collaborateWithAnnotators.title",
+      ),
+      description: t(
+        "annotationQueue.onboarding.valuePropositions.collaborateWithAnnotators.description",
+      ),
       icon: <Users className="h-4 w-4" />,
     },
     {
-      title: "Track annotation metrics",
-      description:
-        "Monitor annotation progress and quality metrics across your team",
+      title: t(
+        "annotationQueue.onboarding.valuePropositions.trackAnnotationMetrics.title",
+      ),
+      description: t(
+        "annotationQueue.onboarding.valuePropositions.trackAnnotationMetrics.description",
+      ),
       icon: <BarChart4 className="h-4 w-4" />,
     },
     {
-      title: "Baseline evaluation efforts",
-      description:
-        "Use annotation data as a baseline to evaluate your other evaluation metrics",
+      title: t(
+        "annotationQueue.onboarding.valuePropositions.baselineEvaluationEfforts.title",
+      ),
+      description: t(
+        "annotationQueue.onboarding.valuePropositions.baselineEvaluationEfforts.description",
+      ),
       icon: <GitMerge className="h-4 w-4" />,
     },
   ];
 
   return (
     <SplashScreen
-      title="Get Started with Annotation Queues"
-      description="Annotation queues help you manage manual annotation/labeling for your LLM projects. Create queues, define annotation metrics, and track progress."
+      title={t("annotationQueue.onboarding.getStartedTitle")}
+      description={t("annotationQueue.onboarding.getStartedDescription")}
       valuePropositions={valuePropositions}
       primaryAction={{
-        label: "Create Annotation Queue",
+        label: t("annotationQueue.onboarding.createAnnotationQueue"),
         component: (
           <CreateOrEditAnnotationQueueButton
             variant="default"

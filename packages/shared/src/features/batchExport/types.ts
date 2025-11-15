@@ -18,6 +18,7 @@ export enum BatchExportFileFormat {
   JSON = "JSON", // eslint-disable-line no-unused-vars
   CSV = "CSV", // eslint-disable-line no-unused-vars
   JSONL = "JSONL", // eslint-disable-line no-unused-vars
+  SIMPLIFIED_JSON = "SIMPLIFIED_JSON", // eslint-disable-line no-unused-vars
 }
 
 // Use shared BatchTableNames enum for consistency across batch operations
@@ -38,6 +39,11 @@ export const exportOptions: Record<
     label: "JSONL",
     extension: "jsonl",
     fileType: "application/x-ndjson",
+  },
+  SIMPLIFIED_JSON: {
+    label: "Simplified JSON",
+    extension: "json",
+    fileType: "application/json",
   },
 } as const;
 

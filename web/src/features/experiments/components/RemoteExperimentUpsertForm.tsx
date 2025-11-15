@@ -2,6 +2,7 @@ import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod/v4";
+import { useTranslation, Trans } from "react-i18next";
 import { Button } from "@/src/components/ui/button";
 import {
   DialogBody,
@@ -51,6 +52,7 @@ export const RemoteExperimentUpsertForm = ({
   } | null;
   setShowRemoteExperimentUpsertForm: (show: boolean) => void;
 }) => {
+  const { t } = useTranslation();
   const hasDatasetAccess = useHasProjectAccess({
     projectId,
     scope: "datasets:CUD",
@@ -158,25 +160,28 @@ export const RemoteExperimentUpsertForm = ({
           onClick={() => setShowRemoteExperimentUpsertForm(false)}
           className="inline-block self-start"
         >
-          ← Back
+          {t("dataset.remoteDatasetRunTrigger.back")}
         </Button>
         <DialogTitle>
           {existingRemoteExperiment
-            ? "Edit remote dataset run trigger"
-            : "Set up remote dataset run trigger in UI"}
+            ? t("dataset.remoteDatasetRunTrigger.editTitle")
+            : t("dataset.remoteDatasetRunTrigger.title")}
         </DialogTitle>
         <DialogDescription>
-          Enable your team to run custom dataset runs on dataset{" "}
-          <strong>
-            {dataset.isSuccess ? (
-              <>&quot;{dataset.data?.name}&quot;</>
-            ) : (
-              <Loader2 className="inline h-4 w-4 animate-spin" />
-            )}
-          </strong>
-          . Configure a webhook URL to trigger remote custom dataset runs from
-          UI. We will send dataset info (name, id) and config to your service,
-          which can run against the dataset and post results to Langfuse.
+          <Trans
+            i18nKey="dataset.remoteDatasetRunTrigger.description"
+            components={{
+              datasetName: (
+                <strong>
+                  {dataset.isSuccess ? (
+                    <>&quot;{dataset.data?.name}&quot;</>
+                  ) : (
+                    <Loader2 className="inline h-4 w-4 animate-spin" />
+                  )}
+                </strong>
+              ),
+            }}
+          />
         </DialogDescription>
       </DialogHeader>
 
@@ -209,11 +214,14 @@ export const RemoteExperimentUpsertForm = ({
               name="defaultPayload"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Default config</FormLabel>
+                  <FormLabel>
+                    {t("dataset.remoteDatasetRunTrigger.defaultConfig")}
+                  </FormLabel>
                   <FormDescription>
-                    Set a default config that will be sent to the remote dataset
-                    run URL. This can be modified before starting a new run.
-                    View docs for more details.
+                    {t(
+                      "dataset.remoteDatasetRunTrigger.defaultConfigDescription",
+                    )}{" "}
+                    {t("dataset.remoteDatasetRunTrigger.viewDocs")}
                   </FormDescription>
                   <CodeMirrorEditor
                     value={field.value}
@@ -241,7 +249,7 @@ export const RemoteExperimentUpsertForm = ({
                   {deleteRemoteExperimentMutation.isPending && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
-                  Delete
+                  {t("dataset.remoteDatasetRunTrigger.delete")}
                 </Button>
               )}
               <Button
@@ -251,7 +259,9 @@ export const RemoteExperimentUpsertForm = ({
                 {upsertRemoteExperimentMutation.isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : null}
-                {existingRemoteExperiment ? "Update" : "Set up"}
+                {existingRemoteExperiment
+                  ? t("dataset.remoteDatasetRunTrigger.update")
+                  : t("dataset.remoteDatasetRunTrigger.setUp")}
               </Button>
             </div>
           </DialogFooter>

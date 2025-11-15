@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 import { usePlaygroundContext } from "@/src/features/playground/page/context";
 import { Button } from "@/src/components/ui/button";
@@ -22,6 +23,7 @@ import { type PlaygroundTool } from "@/src/features/playground/page/types";
 
 // Popover content component for use in CollapsibleSection action buttons
 export const PlaygroundToolsPopover = () => {
+  const { t } = useTranslation();
   const { setTools } = usePlaygroundContext();
   const projectId = useProjectIdFromURL();
 
@@ -78,11 +80,11 @@ export const PlaygroundToolsPopover = () => {
   return (
     <Command className="flex flex-col">
       <CommandInput
-        placeholder="Search tools..."
+        placeholder={t("playground.tools.searchTools")}
         className="h-8 border-none p-1 focus:ring-0 focus:ring-offset-0"
       />
       <CommandList className="max-h-[300px] overflow-y-auto">
-        <CommandEmpty>No tools found.</CommandEmpty>
+        <CommandEmpty>{t("playground.tools.noToolsFound")}</CommandEmpty>
         <CommandGroup>
           {savedTools.map((tool) => (
             <CommandItem
@@ -137,6 +139,7 @@ export const PlaygroundToolsPopover = () => {
 
 // Main component for embedding in CollapsibleSection content
 export const PlaygroundTools = () => {
+  const { t } = useTranslation();
   const { tools, setTools } = usePlaygroundContext();
   const projectId = useProjectIdFromURL();
 
@@ -227,7 +230,9 @@ export const PlaygroundTools = () => {
     <ScrollArea className="h-full">
       {tools.length === 0 ? (
         <div className="flex h-16 flex-col items-center justify-center p-4 text-center">
-          <p className="text-xs text-muted-foreground">No tools attached.</p>
+          <p className="text-xs text-muted-foreground">
+            {t("playground.tools.noToolsAttached")}
+          </p>
         </div>
       ) : (
         <div className="space-y-1">

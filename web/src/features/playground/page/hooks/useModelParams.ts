@@ -202,6 +202,7 @@ function getDefaultAdapterParams(
   adapter: LLMAdapter,
 ): Omit<UIModelParams, "provider" | "model"> {
   switch (adapter) {
+    default:
     // Docs: https://platform.openai.com/docs/api-reference/chat/create
     case LLMAdapter.OpenAI:
       return {
@@ -276,6 +277,19 @@ function getDefaultAdapterParams(
           enabled: true,
         },
         temperature: { value: 1, enabled: false },
+        maxTemperature: { value: 2, enabled: false },
+        max_tokens: { value: 4096, enabled: false },
+        top_p: { value: 1, enabled: false },
+        providerOptions: { value: {}, enabled: false },
+      };
+
+    case LLMAdapter.PowerRAG:
+      return {
+        adapter: {
+          value: adapter,
+          enabled: true,
+        },
+        temperature: { value: 0, enabled: false },
         maxTemperature: { value: 2, enabled: false },
         max_tokens: { value: 4096, enabled: false },
         top_p: { value: 1, enabled: false },

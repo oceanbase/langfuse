@@ -29,5 +29,20 @@
   },
   "eslint.lintTask.enable": true,
   "eslint.workingDirectories": ["./web", "./worker"],
-  "eslint.useFlatConfig": false
+  "eslint.useFlatConfig": false,
+  "database-client.connections": [
+    {
+      "name": "Langfuse ClickHouse",
+      "driver": "ClickHouse",
+      "server": "localhost",
+      "port": 9000,
+      "database": "default",
+      "username": "clickhouse",
+      "password": "clickhouse",
+      "connectionTimeout": 30000,
+      "acquireTimeout": 30000,
+      "timeout": 30000
+    }
+  ],
+  "sqltools.connections": []
 }

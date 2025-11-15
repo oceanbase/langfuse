@@ -241,6 +241,7 @@ export enum LLMAdapter {
   Bedrock = "bedrock",
   VertexAI = "google-vertex-ai",
   GoogleAIStudio = "google-ai-studio",
+  PowerRAG = "powerrag",
 }
 
 export const TextPromptContentSchema = z.string().min(1, "Enter a prompt");
@@ -388,6 +389,11 @@ export const googleAIStudioModels = [
 
 export type AnthropicModel = (typeof anthropicModels)[number];
 export type VertexAIModel = (typeof vertexAIModels)[number];
+// PowerRAG models - custom models for PowerRAG adapter
+export const powerRAGModels = ["powerrag-chat"] as const;
+
+export type PowerRAGModel = (typeof powerRAGModels)[number];
+
 export const supportedModels = {
   [LLMAdapter.Anthropic]: anthropicModels,
   [LLMAdapter.OpenAI]: openAIModels,
@@ -395,6 +401,7 @@ export const supportedModels = {
   [LLMAdapter.GoogleAIStudio]: googleAIStudioModels,
   [LLMAdapter.Azure]: [],
   [LLMAdapter.Bedrock]: [],
+  [LLMAdapter.PowerRAG]: powerRAGModels,
 } as const;
 
 export type LLMFunctionCall = {
@@ -430,8 +437,7 @@ export type LLMApiKey =
     : never;
 
 // NOTE: This string is whitelisted in the TS SDK to allow ingestion of traces by Langfuse. Please mirror edits to this string in https://github.com/langfuse/langfuse-js/blob/main/langfuse-core/src/index.ts.
-export const PROMPT_EXPERIMENT_ENVIRONMENT =
-  "langfuse-prompt-experiment" as const;
+export const PROMPT_EXPERIMENT_ENVIRONMENT = "prompt-experiment" as const;
 
 type PromptExperimentEnvironment = typeof PROMPT_EXPERIMENT_ENVIRONMENT;
 

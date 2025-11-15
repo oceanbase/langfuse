@@ -17,15 +17,19 @@
  */
 const _unsafeNonSecureCopyToClipboard = (text: string) => {
   try {
-    const textArea = document.createElement("textarea");
-    textArea.value = text;
-    textArea.style.position = "fixed";
-    textArea.style.left = "-9999px";
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
+    // 将范围添加到选择中
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    const textNode = document.createTextNode(text);
+
+    document.body.appendChild(textNode);
+    const range = document.createRange();
+    range.selectNode(textNode);
+
+    selection?.addRange(range);
     document.execCommand("copy");
-    document.body.removeChild(textArea);
+    selection?.removeAllRanges();
+    setTimeout(() => document.body.removeChild(textNode), 0);
   } catch (error) {
     console.error("Unable to copy to clipboard", error);
   }

@@ -32,5 +32,5 @@ CREATE TABLE dataset_run_items_rmt (
 
     -- For dataset item lookups
     INDEX idx_dataset_item dataset_item_id TYPE bloom_filter(0.001) GRANULARITY 1,
-) ENGINE = ReplacingMergeTree(event_ts, is_deleted)
+) ENGINE = ReplacingMergeTree(event_ts)
 ORDER BY (project_id, dataset_id, dataset_run_id, id);
